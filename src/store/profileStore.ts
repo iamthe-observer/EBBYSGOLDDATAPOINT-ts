@@ -50,8 +50,12 @@ export const useProfileStore = defineStore('profile', () => {
     profile.value = val;
   };
 
-  const setRole = (val: boolean) => {
-    role.value = val;
+  const setRole = (val: string) => {
+    if (val == 'user') {
+      role.value = true;
+    } else {
+      role.value = false;
+    }
   };
 
   const getProfile = async () => {
@@ -119,16 +123,13 @@ export const useProfileStore = defineStore('profile', () => {
     // }
   };
 
-  const DefaultProfile = [
-    {
-      id: supabase.auth.user()!.id,
-      full_name: 'User',
-      username: 'user',
-      email: supabase.auth.user()!.email,
-      role: true,
-    },
-  ];
-
+  // const DefaultProfile: DefaultProfile = {
+  //   // id: supabase.auth.user()!.id,
+  //   full_name: 'User',
+  //   username: 'user',
+  //   email: supabase.auth.user()!.email,
+  //   role: true,
+  // };
   const insertDefaultProfile = async (val: DefaultProfile[]) => {
     const data = await SupaClient.insertData('profiles', val);
     if (data) return data;

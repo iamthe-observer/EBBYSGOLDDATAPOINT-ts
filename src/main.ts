@@ -2,10 +2,10 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router/router';
 import { createPinia } from 'pinia';
-import './assets/styles/App.css';
 import PrimeVue from 'primevue/config';
 import VCalendar from 'v-calendar';
 import ToastService from 'primevue/toastservice';
+import './style.css';
 
 const app = createApp(App);
 const pinia = createPinia();

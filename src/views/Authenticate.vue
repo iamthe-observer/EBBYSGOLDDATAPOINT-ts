@@ -5,7 +5,20 @@ import { supabase } from '../supabase/supabase';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
-import * as interfaces from '../interfaces/interfaces';
+import { required, email } from '@vuelidate/validators';
+import { computed } from 'vue';
+import { useVuelidate } from '@vuelidate/core';
+interface LoginInUser {
+  (e: 'logIn', emit: emitLogin): void;
+}
+
+interface AdminEmail {
+  id: number;
+  created_at: Date;
+  email: string;
+  name: string;
+  user_id: string;
+}
 
 type UserDetails = {
   email: string;
@@ -19,11 +32,11 @@ type emitLogin = {
 
 const toast = useToast();
 const currContent: object = shallowRef(Login);
-const emit = defineEmits<interfaces.LoginInUser>();
+const emit = defineEmits<LoginInUser>();
 const router = useRouter();
 const loading = ref<boolean>(false);
 const errMsg = ref<string>('');
-const adminEmails: Ref<interfaces.AdminEmail[] | null> = ref(null);
+const adminEmails: Ref<AdminEmail[] | null> = ref(null);
 function checkPassword(str: string) {
   var re = /^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
   return re.test(str);
@@ -39,35 +52,53 @@ onBeforeMount(async () => {
   }
 });
 
-async function loginUser(user: UserDetails) {
-  loading.value = true;
-  try {
-    let { error } = await supabase.auth.signIn({
-      email: user.email,
-      password: user.password,
-    });
-    if (error) throw error;
+const rules = computed(() => {
+  return {
+    email: { required, email },
+    password: { required },
+  };
+});
 
-    const user_email = supabase.auth.user()!.email!;
-    const adminLoggedIn = adminEmails.value!.filter(
-      user => user_email == user.email
-    );
-    emit('logIn', {
-      val: true,
-      adminLoggedIn: adminLoggedIn[0] ? 'admin' : 'user',
+async function loginUser(user: UserDetails) {
+  const v$l = useVuelidate(rules, user);
+  let val: any = await v$l.value.$validate();
+  console.log(val);
+
+  if (!val) {
+    v$l.value.$errors.forEach(err => {
+      alert(err.$message);
     });
-    router.push({ name: 'Dashboard' });
-    loading.value = false;
-    return;
-  } catch (err: object) {
-    errMsg.value = err.message;
-    loading.value = false;
-    setTimeout(() => {
-      errMsg.value = '';
-    }, 4000);
-  } finally {
-    loading.value = false;
+  } else {
+    alert('submitted!');
+    try {
+      let { error } = await supabase.auth.signIn({
+        email: user.email,
+        password: user.password,
+      });
+      if (error) throw error;
+
+      const user_email = supabase.auth.user()!.email!;
+      const adminLoggedIn = adminEmails.value!.filter(
+        user => user_email == user.email
+      );
+      emit('logIn', {
+        val: true,
+        adminLoggedIn: adminLoggedIn[0] ? 'admin' : 'user',
+      });
+      router.push({ name: 'Dashboard' });
+      loading.value = false;
+      return;
+    } catch (err: object) {
+      errMsg.value = err.message;
+      loading.value = false;
+      setTimeout(() => {
+        errMsg.value = '';
+      }, 4000);
+    } finally {
+      loading.value = false;
+    }
   }
+  loading.value = true;
 }
 </script>
 
@@ -137,14 +168,14 @@ async function loginUser(user: UserDetails) {
 </template>
 
 <style scoped>
-@import url(//fonts.googleapis.com/css?family=Lato:300:400);
+/* @import url(//fonts.googleapis.com/css?family=Lato:300:400); */
 
 body {
   margin: 0;
 }
 
 h1 {
-  font-family: 'Lato', sans-serif;
+  font-family: outfit, sans-serif;
   font-weight: 300;
   letter-spacing: 2px;
   font-size: 48px;

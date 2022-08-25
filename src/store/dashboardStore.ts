@@ -2,47 +2,39 @@ import { defineStore, storeToRefs } from 'pinia';
 import { supabase } from '../supabase/supabase';
 import { useStorage } from '@vueuse/core';
 import { useProfileStore } from './profileStore';
-import { ref, computed, Ref } from 'vue';
-import { Applicant, Dashboard, UserSignIn } from '../interfaces/interfaces';
-import * as SupaClient from '../composables/supaClient';
+import { ref, Ref, computed } from 'vue';
+import * as interfaces from '../interfaces/interfaces';
 
 export const useDashStore = defineStore('dashboard', () => {
   const dashboard = ref(
-    useStorage<Dashboard>('dashboard', {
+    useStorage<interfaces.Dashboard>('dashboard', {
+      // dailyUserApls: [],
       apls: [],
       paginatedApls: [],
       super_contact_info: [],
     })
   );
-  //   dailyUserApls: [],
-
-  const dailyUserApls = computed<Applicant[] | null>(() => {
-    if (dashboard.value.apls) {
-      return [];
-    } else {
-      return dashboard.value.apls!.filter(
-        y => fd(new Date(y.created_at)) === fd(new Date())
-      );
-    }
-  });
 
   const { role } = storeToRefs(useProfileStore());
-  const loading = ref<boolean>(false);
-  const dailyUserSignIns = ref<UserSignIn[] | null>([]);
-  const version = ref<string>('2.01-alpha');
+  const loading = ref(false);
+  const dailyUserSignIns: Ref<interfaces.UserSignIn[]> = ref([]);
+  const version = ref('2.01-alpha');
 
   let startNum = ref(0);
   let endNum = ref(9);
 
-  const dailyApls = computed(() => dailyUserApls.value);
-  const super_contact_info = computed(() => dashboard.value.super_contact_info);
-  const getDailyUserAplsNumb = computed(() => dailyUserApls.value!.length);
+  const dailyUserApls = computed(() => {
+    return dashboard.value.apls!.filter(
+      y => fd(new Date(y.created_at)) === fd(new Date())
+    );
+  });
+
   const getTotalUserAplsNumb = computed(() => dashboard.value.apls!.length);
 
   const getApls = async () => {
     loading.value = true;
     try {
-      if (role.value === 'user') {
+      if (role.value === true) {
         const { data, error } = await supabase
           .from('applicants')
           .select('*')
@@ -50,7 +42,6 @@ export const useDashStore = defineStore('dashboard', () => {
           .eq('user_id', supabase.auth.user()!.id);
         if (error) throw error;
         dashboard.value.apls = data;
-        return data;
       } else {
         const { data, error } = await supabase
           .from('applicants')
@@ -58,12 +49,10 @@ export const useDashStore = defineStore('dashboard', () => {
           .order('plastName', { ascending: true });
         if (error) throw error;
         dashboard.value.apls = data;
-        return data;
       }
+      loading.value = false;
     } catch (err: any) {
       console.log(err.message);
-      loading.value = false;
-    } finally {
       loading.value = false;
     }
   };
@@ -90,7 +79,7 @@ export const useDashStore = defineStore('dashboard', () => {
   };
 
   const getDailyServiceSales = computed<number>(() => {
-    const val = dailyUserApls.value!.map(x => x.totalPayment);
+    const val = dailyUserApls.value.map(x => x.totalPayment);
     return val.reduce(function (price, nextPrice) {
       return price + nextPrice;
     }, 0);
@@ -106,7 +95,7 @@ export const useDashStore = defineStore('dashboard', () => {
     startNum.value = 10 * num;
     endNum.value = 9 + 10 * num;
     try {
-      if (role.value === 'user') {
+      if (role.value === true) {
         let { data, error } = await supabase
           .from('applicants')
           .select('*')
@@ -116,7 +105,6 @@ export const useDashStore = defineStore('dashboard', () => {
 
         if (error) throw error;
         dashboard.value.paginatedApls = data;
-        return data;
       } else {
         let { data, error } = await supabase
           .from('applicants')
@@ -126,12 +114,11 @@ export const useDashStore = defineStore('dashboard', () => {
 
         if (error) throw error;
         dashboard.value.paginatedApls = data;
-        return data;
       }
+
+      loading.value = false;
     } catch (error: any) {
       console.log(error.message);
-      loading.value = false;
-    } finally {
       loading.value = false;
     }
   };
@@ -160,12 +147,9 @@ export const useDashStore = defineStore('dashboard', () => {
     fd,
     resetApls,
     getApls,
-    dailyApls,
-    getDailyUserAplsNumb,
     getTotalUserAplsNumb,
     getDailyServiceSales,
     getContactInfo,
-    super_contact_info,
     paginateApls,
     getDailyUserSignIns,
     dailyUserSignIns,

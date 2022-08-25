@@ -1,13 +1,5 @@
 import { emitLogin, _Null } from '../types/types';
 
-export interface AdminEmail {
-  id: number;
-  created_at: Date;
-  email: string;
-  name: string;
-  user_id: string;
-}
-
 export interface LoginInUser {
   (e: 'logIn', emit: emitLogin): void;
 }
@@ -76,11 +68,13 @@ export interface Applicant {
     instagram: _Null<string>;
     twitter: _Null<string>;
   };
-  aplImg_path: {
-    primePath: string[] | null;
-    secPath: string[];
-    wardsPath: string[];
-  }[];
+  aplImg_path:
+    | {
+        primePath: _Null<string[]>;
+        secPath: _Null<string[]>;
+        wardsPath: _Null<string[]>;
+      }[]
+    | null;
 }
 
 export interface Dashboard {
@@ -117,10 +111,10 @@ export interface ProfileData {
 }
 
 export interface DefaultProfile {
-  id: string;
+  id: string | undefined | null;
   full_name: string;
   username: string;
-  email: string;
+  email: string | undefined | null;
   role: boolean;
 }
 

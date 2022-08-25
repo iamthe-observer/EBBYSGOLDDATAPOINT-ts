@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import 'animate.css';
 import { storeToRefs } from 'pinia';
+import { _Null } from '../types/types';
 // import { useProfileStore } from '../store/profileStore';
 // import { useDashStore } from '../store/dashboardStore';
 
@@ -9,7 +10,7 @@ import { storeToRefs } from 'pinia';
 // const { role } = storeToRefs(useProfileStore());
 interface Props {
   username: string;
-  avatar_url: string;
+  avatar_url: _Null<string>;
   isNotFound: boolean;
 }
 const props = defineProps<Props>();

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { supabase } from '../supabase/supabase';
-import { ref, Ref, computed } from 'vue';
+import { ref, Ref, ComputedRef, computed } from 'vue';
 import { useProfileStore } from './profileStore';
 import { storeToRefs } from 'pinia';
 import { Applicant, Requests } from '../interfaces/interfaces';
@@ -90,11 +90,9 @@ export const useRequestStore = defineStore('requests', () => {
     loading.value = false;
   };
 
-  //   const primeImg = computed<string>(() => {
-  //     return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
-  //       currentRequest.value!.modify_apl.aplImg_path.primePath[0]
-  //     }`;
-  //   });
+  const aplImg = computed(() => {
+    return currentRequest.value!.modify_apl.aplImg_path!;
+  });
 
   const handleOpenAplRequest = (request: Requests) => {
     isRequestOpen.value = true;
@@ -125,7 +123,7 @@ export const useRequestStore = defineStore('requests', () => {
     deleteRequest,
     curr_request,
     setCurrRequest,
-    // primeImg,
+    aplImg,
     refresh,
     getRequests,
     isRequest,
@@ -135,5 +133,6 @@ export const useRequestStore = defineStore('requests', () => {
     requests,
     currentRequest,
     handleOpenAplRequest,
+    loading,
   };
 });

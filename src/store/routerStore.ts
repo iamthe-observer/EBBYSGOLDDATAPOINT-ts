@@ -16,7 +16,7 @@ export const useRouteStore = defineStore('routeStore', () => {
     useStorage<{ route: RouteRecordName | string | null | undefined }>(
       'currentRoute',
       {
-        route: null,
+        route: '',
       }
     )
   );
