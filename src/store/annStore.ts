@@ -1,10 +1,11 @@
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { Ref, ref } from 'vue';
 import { supabase } from '../supabase/supabase';
+import * as interfaces from '../interfaces/interfaces';
 
 export const useAnnStore = defineStore('announcements', () => {
-  const ann = ref(
+  const ann: Ref<{ all: object[]; today: object[] }> = ref(
     useStorage('announcements', {
       all: [],
       today: [],
@@ -29,7 +30,7 @@ export const useAnnStore = defineStore('announcements', () => {
     return day;
   };
 
-  const getAnn = async (from:string,select:string) => {
+  const getAnn = async (from: string, select: string) => {
     loading.value = true;
     try {
       let { data, error } = await supabase.from('announcements').select('*');
@@ -37,8 +38,8 @@ export const useAnnStore = defineStore('announcements', () => {
       if (error) throw error;
       loading.value = false;
 
-      ann.value.all = data.reverse();
-      ann.value.today = data.reverse().filter(ann => {
+      ann.value.all = data!.reverse();
+      ann.value.today = data!.reverse().filter(ann => {
         if (changeDate(ann.created_at) == changeDate(new Date())) {
           return ann;
         }
