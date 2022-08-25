@@ -5,6 +5,7 @@ import { supabase } from '../supabase/supabase';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
+import * as interfaces from '../interfaces/interfaces';
 
 type UserDetails = {
   email: string;
@@ -16,24 +17,13 @@ type emitLogin = {
   adminLoggedIn: string;
 };
 
-interface AdminEmail {
-  created_at: Date;
-  email: string;
-  name: string;
-  user_id: string;
-}
-
-interface LoginInUser {
-  (e: 'logIn', emit: emitLogin): void;
-}
-
 const toast = useToast();
 const currContent: object = shallowRef(Login);
-const emit = defineEmits<LoginInUser>();
+const emit = defineEmits<interfaces.LoginInUser>();
 const router = useRouter();
 const loading = ref<boolean>(false);
 const errMsg = ref<string>('');
-const adminEmails: Ref<AdminEmail[] | null> = ref(null);
+const adminEmails: Ref<interfaces.AdminEmail[] | null> = ref(null);
 function checkPassword(str: string) {
   var re = /^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
   return re.test(str);

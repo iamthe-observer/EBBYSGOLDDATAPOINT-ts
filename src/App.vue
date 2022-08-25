@@ -11,6 +11,7 @@ import Navigation from './components/Navigation.vue';
 import { useAuthStore } from './store/AuthStore';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import { supabase } from './supabase/supabase';
 
 type emitLogin = {
   val: boolean;
@@ -45,7 +46,7 @@ function handleLogIn(ev: emitLogin) {
   logged.value = ev.val;
 }
 function handleLogout(ev: boolean) {
-  useAuthStore().logout(ev);
+  useAuthStore().logout();
   logged.value = ev;
 }
 

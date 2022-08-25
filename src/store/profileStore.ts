@@ -1,218 +1,243 @@
 import { defineStore } from 'pinia';
 import { supabase } from '../supabase/supabase';
-import { ref, computed } from 'vue';
+import { ref, Ref, computed } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { v4 as uuidv4 } from 'uuid';
+import { DefaultProfile, ProfileData } from '../interfaces/interfaces';
+import * as SupaClient from '../composables/supaClient';
 
 export const useProfileStore = defineStore('profile', () => {
-    const profile = ref(useStorage('profile', []));
-    const path = ref('');
-    const files = ref([]);
-    const uploading = ref(false);
-    const isNotFound = ref(false);
-    const Users = ref([]);
-    const placeholder_avatar =
-        'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg';
+  const profile = ref(useStorage<ProfileData>('profile', null));
+  const path = ref<string>('');
+  const files = ref<File[]>([]);
+  const uploading = ref<boolean>(false);
+  const isNotFound = ref<boolean>(false);
+  const Users: Ref<ProfileData[]> = ref([]);
+  const role = ref(useStorage<boolean>('role', null));
+  const placeholder_avatar: string =
+    'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg';
 
-    const fd = date => {
-        let today = date;
-        let dd = String(today.getDate()).padStart(2, '0');
-        let mm = String(today.getMonth() + 1).padStart(2, '0');
-        let yyyy = today.getFullYear();
+  const fd = (date: Date) => {
+    let today = date;
+    let dd = String(today.getDate()).padStart(2, '0');
+    let mm = String(today.getMonth() + 1).padStart(2, '0');
+    let yyyy = today.getFullYear();
 
-        return dd + '-' + mm + '-' + yyyy;
-    };
-    const role = ref(useStorage('role', null));
+    return dd + '-' + mm + '-' + yyyy;
+  };
 
-    // computed
+  // computed
 
-    const url = computed(() =>
-        profile.value ? profile.value.avatar_url : placeholder_avatar
+  const url = computed(() =>
+    profile.value ? profile.value.avatar_url : placeholder_avatar
+  );
+  const username = computed(() =>
+    profile.value ? profile.value.username : 'user'
+  );
+  const fullname = computed(() =>
+    profile.value ? profile.value.full_name : 'User'
+  );
+
+  const reset = () => {
+    profile.value = null;
+    path.value = '';
+    files.value = [];
+    uploading.value = false;
+    isNotFound.value = false;
+  };
+
+  const setProfile = (val: ProfileData) => {
+    profile.value = val;
+  };
+
+  const setRole = (val: boolean) => {
+    role.value = val;
+  };
+
+  const getProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabase.auth.user()!.id);
+      if (error) throw error;
+      setProfile(data[0]);
+    } catch (err: any) {
+      console.trace(err.message);
+    }
+  };
+
+  const getUsers = async () => {
+    try {
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (error) throw error;
+      const regularUsers = data.filter(x => x.role);
+      Users.value = regularUsers;
+    } catch (err: any) {
+      console.trace(err.message);
+    }
+  };
+
+  const updateProfile = async (val: object) => {
+    const data = await SupaClient.updateData(
+      'profiles',
+      val,
+      'id',
+      supabase.auth.user()!.id
     );
-    const username = computed(() =>
-        profile.value ? profile.value.username : 'user'
+    if (data) return data;
+    // try {
+    //   const { data, error } = await supabase
+    //     .from('profiles')
+    //     .update(val)
+    //     .eq('id', supabase.auth.user()!.id);
+    //   if (error) throw error;
+    //   return data;
+    // } catch (err: any) {
+    //   console.trace(err.message);
+    // }
+  };
+
+  const checkForProfile = async () => {
+    const data = await SupaClient.getData(
+      'profiles',
+      '*',
+      'id',
+      supabase.auth.user()!.id
     );
-    const fullname = computed(() =>
-        profile.value ? profile.value.full_name : 'User'
-    );
+    if (data) return data;
 
-    const reset = () => {
-        profile.value = [];
-        path.value = '';
-        files.value = [];
-        uploading.value = false;
-        isNotFound.value = false;
-    };
+    // try {
+    //   const { data, error } = await supabase
+    //     .from('profiles')
+    //     .select('*')
+    //     .eq('id', supabase.auth.user()!.id);
+    //   if (error) throw error;
+    //   return data;
+    // } catch (err: any) {
+    //   console.log(err.message);
+    // }
+  };
 
-    const setProfile = val => {
-        profile.value = val;
-    };
+  const DefaultProfile = [
+    {
+      id: supabase.auth.user()!.id,
+      full_name: 'User',
+      username: 'user',
+      email: supabase.auth.user()!.email,
+      role: true,
+    },
+  ];
 
-    const setRole = val => {
-        role.value = val;
-    };
+  const insertDefaultProfile = async (val: DefaultProfile[]) => {
+    const data = await SupaClient.insertData('profiles', val);
+    if (data) return data;
+    // try {
+    //   const { data, error } = await supabase.from('profiles').insert(val);
+    //   if (error) throw error;
+    //   return data;
+    // } catch (err) {
+    //   console.log(err.message);
+    // }
+  };
 
-    const getProfile = async() => {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', supabase.auth.user().id);
-            if (error) throw error;
-            setProfile(data[0]);
-        } catch (err) {
-            console.trace(err.message);
-        }
-    };
+  const uploadAvatar = async (evt: any) => {
+    files.value = evt.files;
+    const file = files.value[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `avatar-${uuidv4()}.${fileExt}`;
+    const filePath = `${fileName}`;
+    path.value = `${supabase.auth.user()!.id}/${filePath}`;
 
-    const getUsers = async() => {
-        try {
-            const { data, error } = await supabase.from('profiles').select('*');
-            if (error) throw error;
-            const regularUsers = data.filter(x => x.role);
-            Users.value = regularUsers;
-        } catch (err) {
-            console.trace(err.message);
-        }
-    };
+    try {
+      uploading.value = true;
+      if (!files.value || files.value.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+      profile.value.avatar_url = null;
 
-    const updateProfile = async val => {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .update(val)
-                .eq('id', supabase.auth.user().id);
-            if (error) throw error;
-            return data;
-        } catch (err) {
-            console.trace(err.message);
-        }
-    };
+      const data = await SupaClient.storageUpload('avatars', path.value, file);
+      //   let { data, error } = await supabase.storage
+      //     .from('avatars')
+      //     .upload(path.value, file);
+      if (data) {
+        let URL = await getPublicURL(path.value);
+        let info = await updateProfile({
+          avatar_url: URL,
+          avatar_path: path.value,
+        });
+        profile.value.avatar_url = info![0].avatar_url;
+      }
+      return true;
+    } catch (error: any) {
+      uploading.value = false;
+      alert(error.message);
+      return false;
+    } finally {
+      uploading.value = false;
+    }
+  };
 
-    const checkForProfile = async() => {
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', supabase.auth.user().id);
-            if (error) throw error;
-            return data;
-        } catch (err) {
-            console.log(err.message);
-        }
-    };
+  const getPublicURL = async (path: string) => {
+    try {
+      const { publicURL, error } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(path);
+      if (error) throw error;
+      return publicURL;
+    } catch (err: any) {
+      console.trace(err.message);
+    }
+  };
 
-    const insertDefaultProfile = async() => {
-        try {
-            const { data, error } = await supabase.from('profiles').insert([{
-                id: supabase.auth.user().id,
-                full_name: 'User',
-                username: 'user',
-                email: supabase.auth.user().email,
-                role: true,
-            }, ]);
-            if (error) throw error;
-            return data;
-        } catch (err) {
-            console.log(err.message);
-        }
-    };
+  const updateAvatar = async (evt: any) => {
+    files.value = evt.files;
+    const file = files.value[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `avatar.${fileExt}`;
+    const filePath = `${fileName}`;
+    path.value = `${supabase.auth.user()!.id}/${filePath}`;
+    try {
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .update(path.value, file, {
+          cacheControl: '1',
+          upsert: true,
+        });
+      if (error) throw error;
 
-    const uploadAvatar = async evt => {
-        files.value = evt.files;
-        const file = files.value[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `avatar-${uuidv4()}.${fileExt}`;
-        const filePath = `${fileName}`;
-        path.value = `${supabase.auth.user().id}/${filePath}`;
+      let URL = await getPublicURL(path.value);
+      let info = await updateProfile({
+        avatar_url: URL,
+      });
+      profile.value.avatar_url = info![0].avatar_url;
+    } catch (err: any) {
+      console.trace(err.message);
+    }
+  };
 
-        try {
-            uploading.value = true;
-            if (!files.value || files.value.length === 0) {
-                throw new Error('You must select an image to upload.');
-            }
-            profile.value.avatar_url = null;
-
-            let { data, error } = await supabase.storage
-                .from('avatars')
-                .upload(path.value, file);
-            if (error) throw error;
-            let URL = await getPublicURL(path.value);
-            let info = await updateProfile({
-                avatar_url: URL,
-                avatar_path: path.value,
-            });
-            profile.value.avatar_url = info[0].avatar_url;
-            return true;
-        } catch (error) {
-            uploading.value = false;
-            alert(error.message);
-            return false;
-        } finally {
-            uploading.value = false;
-        }
-    };
-
-    const getPublicURL = async path => {
-        try {
-            const { publicURL, error } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(path);
-            if (error) throw error;
-            return publicURL;
-        } catch (err) {
-            console.trace(err);
-        }
-    };
-
-    const updateAvatar = async evt => {
-        files.value = evt.files;
-        const file = files.value[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `avatar.${fileExt}`;
-        const filePath = `${fileName}`;
-        path.value = `${supabase.auth.user().id}/${filePath}`;
-        try {
-            const { data, error } = await supabase.storage
-                .from('avatars')
-                .update(path.value, file, {
-                    cacheControl: '1',
-                    upsert: true,
-                });
-            if (error) throw error;
-
-            let URL = await getPublicURL(path.value);
-            let info = await updateProfile({
-                avatar_url: URL,
-            });
-            profile.value.avatar_url = info[0].avatar_url;
-        } catch (err) {
-            console.trace(err.message);
-        }
-    };
-
-    return {
-        profile,
-        path,
-        files,
-        uploading,
-        isNotFound,
-        fd,
-        role,
-        setRole,
-        updateProfile,
-        insertDefaultProfile,
-        checkForProfile,
-        uploadAvatar,
-        getPublicURL,
-        reset,
-        getProfile,
-        setProfile,
-        url,
-        username,
-        fullname,
-        updateAvatar,
-        getUsers,
-        Users,
-    };
+  return {
+    profile,
+    path,
+    files,
+    uploading,
+    isNotFound,
+    fd,
+    role,
+    setRole,
+    updateProfile,
+    insertDefaultProfile,
+    checkForProfile,
+    uploadAvatar,
+    getPublicURL,
+    reset,
+    getProfile,
+    setProfile,
+    url,
+    username,
+    fullname,
+    updateAvatar,
+    getUsers,
+    Users,
+  };
 });

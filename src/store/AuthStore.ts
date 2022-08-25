@@ -7,7 +7,7 @@ import * as types from '../types/types';
 export const useAuthStore = defineStore('authenticate', () => {
   const router = useRouter();
 
-  async function logout(ev: boolean) {
+  async function logout() {
     try {
       let { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -18,10 +18,7 @@ export const useAuthStore = defineStore('authenticate', () => {
     }
   }
 
-  async function login(ev: types.emitLogin) {}
-
   return {
     logout,
-    login,
   };
 });
