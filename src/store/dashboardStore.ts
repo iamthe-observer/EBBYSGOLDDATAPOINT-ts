@@ -147,6 +147,7 @@ export const useDashStore = defineStore('dashboard', () => {
     fd,
     resetApls,
     getApls,
+    dailyUserApls,
     getTotalUserAplsNumb,
     getDailyServiceSales,
     getContactInfo,

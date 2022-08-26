@@ -1,5 +1,5 @@
-<script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
+<script setup lang="ts">
+import { ref, reactive, onMounted, computed, Ref } from 'vue';
 import { useProfileStore } from '../store/profileStore';
 import { storeToRefs } from 'pinia';
 import gradientButton from '../composables/gradientButton.vue';
@@ -10,6 +10,10 @@ import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import { DefaultProfile, RegisterInfo } from '../interfaces/interfaces';
+import { required, email } from '@vuelidate/validators';
+import useVuelidate from '@vuelidate/core';
+import { _Null } from '../types/types';
 
 const { uploading } = storeToRefs(useProfileStore());
 const profileStore = useProfileStore();
@@ -22,7 +26,7 @@ const { url } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
 const editMode = ref(false);
 const resetPassword = ref(false);
-const imageFile = ref(null);
+const imageFile: Ref<Event | null> = ref(null);
 const toast = useToast();
 const passwordReset = ref('');
 const confirmPasswordReset = ref('');
@@ -30,37 +34,73 @@ const RegisterModal = ref(false);
 const loading = ref(false);
 const errMsg = ref('');
 
-const registerInfo = reactive({
-  email: null,
-  password: null,
-  confirmPassword: null,
+const registerInfo = reactive<RegisterInfo>({
+  email: '',
+  password: '',
+  confirmPassword: '',
 });
 
+const showToast = (
+  severity: string,
+  summary: string,
+  detail: string,
+  life: number = 3000
+): void => {
+  toast.add({
+    severity: severity,
+    summary: summary,
+    detail: detail,
+    life: life,
+  });
+};
+
 const adminProfileName = computed(() => {
-  if (role.value === 'admin') return 'ADMIN ';
+  if (role.value === false) return 'ADMIN ';
 });
 
 // TODO policies for updating and deleting avatars..JUST LEARN POLICIES AND SQL QUERIES
 
+const DefaultProfile: DefaultProfile = {
+  // id: supabase.auth.user()!.id,
+  full_name: 'User',
+  username: 'user',
+  email: supabase.auth.user()!.email,
+  role: true,
+  id: supabase.auth.user()!.id,
+};
+
 onMounted(async () => {
   try {
     let ifProfile = await profileStore.checkForProfile();
-    if (ifProfile.length !== 0) return;
-    await profileStore.insertDefaultProfile();
+    if (ifProfile!.length !== 0) return;
+    await profileStore.insertDefaultProfile([DefaultProfile]);
   } catch (error) {
     console.log(error);
   }
 });
 
-function onSelect(event) {
+function onSelect(event: Event) {
   imageFile.value = event;
   // src.value = imageFile.value.files[0].objectURL;
 }
 
-async function saveAvatarPic(evt) {
+async function saveAvatarPic(evt: any) {
   let res = await profileStore.uploadAvatar(evt);
-  if (!res) return showErrorAvatar();
-  return showSuccessAvatar();
+  if (!res)
+    return showToast(
+      'error',
+      'Error Updating Avatar!',
+      'Some internet or server issue... check internet connection.',
+      4000
+    );
+  // if (!res) return showErrorAvatar();
+  return showToast(
+    'success',
+    'Avatar Updated!',
+    `changed avatar...you're welcome.`,
+    3000
+  );
+  // return showSuccessAvatar();
 }
 
 function enterEditMode() {
@@ -79,7 +119,7 @@ async function saveProfile() {
     await profileStore.getProfile();
     editMode.value = !editMode.value;
     showSuccess(userName.value, fullName.value);
-  } catch (err) {
+  } catch (err: any) {
     console.log(err.message);
     usernameUploading.value = false;
     editMode.value = !editMode.value;
@@ -90,7 +130,7 @@ async function saveProfile() {
 }
 
 const passwordUpdating = ref(false);
-function checkPassword(str) {
+function checkPassword(str: string) {
   var re = /^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
   return re.test(str);
 }
@@ -111,7 +151,7 @@ async function updatePassword() {
         if (error) throw error;
         passwordUpdating.value = false;
         showSuccessPassword();
-      } catch (error) {
+      } catch (error: any) {
         alert(error.message);
         passwordUpdating.value = false;
       }
@@ -124,7 +164,7 @@ async function updatePassword() {
   }
 }
 
-const showSuccess = (username, fullname) => {
+const showSuccess = (username: string, fullname: string) => {
   toast.add({
     severity: 'success',
     summary: 'Profile Data Updated!',
@@ -195,33 +235,50 @@ const showRegisterSuccess = () => {
   });
 };
 
+const rules = computed(() => {
+  return {
+    email: { required, email },
+    password: { required },
+    confirmPassword: { required },
+  };
+});
+
 const registerUser = async () => {
   loading.value = true;
-  if (registerInfo.password !== registerInfo.confirmPassword) {
-    loading.value = false;
-    errMsg.value = 'Passwords do not match... try again.';
-    setTimeout(() => {
-      errMsg.value = '';
-    }, 4000);
+  const v$ = useVuelidate(rules, registerInfo);
+  let val = await v$.value.$validate();
+  console.log(v$);
+  if (!val) {
+    v$.value.$errors.forEach(err => {
+      alert(err.$message);
+    });
   } else {
-    if (checkPassword(registerInfo.password)) {
-      try {
-        let { user, error } = await supabase.auth.signUp({
-          email: registerInfo.email,
-          password: registerInfo.password,
-        });
-        if (error) throw error;
-        showRegisterSuccess();
-        loading.value = false;
-        RegisterModal.value = false;
-      } catch (err) {
-        errMsg.value = err.message;
-        loading.value = false;
-        setTimeout(() => {
-          errMsg.value = '';
-        }, 4000);
-      } finally {
-        loading.value = false;
+    if (registerInfo.password !== registerInfo.confirmPassword) {
+      loading.value = false;
+      errMsg.value = 'Passwords do not match... try again.';
+      setTimeout(() => {
+        errMsg.value = '';
+      }, 4000);
+    } else {
+      if (checkPassword(registerInfo.password)) {
+        try {
+          let { user, error } = await supabase.auth.signUp({
+            email: registerInfo.email,
+            password: registerInfo.password,
+          });
+          if (error) throw error;
+          showRegisterSuccess();
+          loading.value = false;
+          RegisterModal.value = false;
+        } catch (err: any) {
+          errMsg.value = err.message;
+          loading.value = false;
+          setTimeout(() => {
+            errMsg.value = '';
+          }, 4000);
+        } finally {
+          loading.value = false;
+        }
       }
     }
   }
@@ -247,7 +304,7 @@ const registerUser = async () => {
       </h1>
 
       <Avatar
-        @edit="e => (editMode = e)"
+        @edit="(e:any) => (editMode = e)"
         :url="url"
         :editMode="editMode"
         :uploading="uploading"
@@ -431,7 +488,7 @@ const registerUser = async () => {
       <div class="mt-20 w-full gap-5 flex justify-center">
         <gradient-button
           @click="RegisterModal = !RegisterModal"
-          v-if="!editMode && role === 'admin'"
+          v-if="!editMode && !role"
           >Register New User</gradient-button
         >
         <gradient-button @click="enterEditMode" v-if="!editMode"

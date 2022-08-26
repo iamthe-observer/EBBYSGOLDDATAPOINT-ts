@@ -44,6 +44,9 @@ export interface Applicant {
   scity_ob: _Null<string>;
   scountry_ob: _Null<string>;
   sgender: _Null<string>;
+  sdob_day: _Null<number>;
+  sdob_month: _Null<number>;
+  sdob_year: _Null<number>;
   wards: {
     wlastName: _Null<string>;
     wfirstName: _Null<string>;
@@ -56,12 +59,9 @@ export interface Applicant {
     wcountry_ob: _Null<string>;
     index: number;
   }[];
-  sdob_day: _Null<number>;
-  sdob_month: _Null<number>;
-  sdob_year: _Null<number>;
   totalPayment: number;
   passportAvail: boolean;
-  created_at_date: Date;
+  created_at_date: string;
   pother_contact: _Null<string>;
   psocial_media: {
     facebook: _Null<string>;
@@ -132,4 +132,10 @@ export interface Requests {
 export interface SearchParams {
   fullName: string;
   apl_id: string;
+}
+
+export interface RegisterInfo {
+  email: string;
+  password: string;
+  confirmPassword: string;
 }

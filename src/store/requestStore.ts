@@ -91,7 +91,9 @@ export const useRequestStore = defineStore('requests', () => {
   };
 
   const aplImg = computed(() => {
-    return currentRequest.value!.modify_apl.aplImg_path!;
+    return currentRequest.value!.modify_apl.aplImg_path?.filter(
+      x => x.primePath![0]
+    );
   });
 
   const handleOpenAplRequest = (request: Requests) => {

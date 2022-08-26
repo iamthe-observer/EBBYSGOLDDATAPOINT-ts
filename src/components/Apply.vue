@@ -1,5 +1,13 @@
-<script setup>
-import { ref, provide, computed, watchEffect, watch, onMounted } from 'vue';
+<script setup lang="ts">
+import {
+  ref,
+  provide,
+  computed,
+  watchEffect,
+  reactive,
+  onMounted,
+  Ref,
+} from 'vue';
 import WardForm from './wardForm.vue';
 import Dialog from 'primevue/dialog';
 import gradientButton from '../composables/gradientButton.vue';
@@ -16,15 +24,64 @@ import Toast from 'primevue/toast';
 import InlineMessage from 'primevue/inlinemessage';
 import Button from 'primevue/button';
 import Countries from './countries.vue';
+import { Applicant } from '../interfaces/interfaces';
+import { _Null } from '../types/types';
 
+const apl = reactive<Applicant>({
+  created_at: new Date(),
+  apl_id: null,
+  plastName: null,
+  pfirstName: null,
+  potherName: null,
+  pdob_day: null,
+  pdob_month: null,
+  pdob_year: null,
+  pcity_ob: null,
+  pcountry_ob: null,
+  pgender: null,
+  pconf_code: null,
+  pemail: null,
+  ppassport_number: null,
+  passport_ex_day: null,
+  passport_ex_month: null,
+  passport_ex_year: null,
+  pcountry_live_today: null,
+  peducation_level: null,
+  ppostal: null,
+  pmarital_status: 'unmarried',
+  children_number: 0,
+  fullName: null,
+  user_id: supabase.auth.user()!.id,
+  pcontact: null,
+  slastName: null,
+  sfirstName: null,
+  sotherName: null,
+  scity_ob: null,
+  scountry_ob: null,
+  sgender: null,
+  wards: [],
+  sdob_day: null,
+  sdob_month: null,
+  sdob_year: null,
+  totalPayment: 0,
+  passportAvail: false,
+  created_at_date: new Date().toLocaleString().split(',')[0],
+  pother_contact: null,
+  psocial_media: {
+    facebook: null,
+    instagram: null,
+    twitter: null,
+  },
+  aplImg_path: [],
+});
 const toast = useToast();
 
 onMounted(() => {
   useApplyImgStore().resetFiles();
 });
 
-const user_id = supabase.auth.user().id;
-const apply = ref(null);
+const user_id = supabase.auth.user()!.id;
+const apply: Ref<HTMLDivElement | null> = ref(null);
 const loading = ref(false);
 const imgUploading = ref(false);
 const { hasFiles } = storeToRefs(useApplyImgStore());
@@ -40,59 +97,60 @@ provide('disabled', disabled);
 // primary and secondary apl imgs and srcs
 const aplImg_path = ref([]);
 const primeIMG = ref(null);
-const ifSavedPrimeMsg = ref(false);
-const ifSavedSecMsg = ref(false);
 const primeSRC = ref(null);
 const secIMG = ref(null);
 const secSRC = ref(null);
-const passportAvail = ref(false);
-const discounted = ref(false);
 const discountAmount = ref(null);
 
-const plastName = ref(null);
-const pfirstName = ref(null);
-const potherName = ref(null);
-const pdob_day = ref(null);
-const pdob_month = ref(null);
-const pdob_year = ref(null);
-const passport_number = ref(null);
-const passport_ex_day = ref(null);
-const passport_ex_month = ref(null);
-const passport_ex_year = ref(null);
-const conf_code = ref(null);
-const pgender = ref(null);
-const pcity_ob = ref(null);
-const pcountry_ob = ref(null);
-const email = ref(null);
-const country_live_today = ref(null);
-const education_level = ref(null);
-const pcontact = ref(null);
-const pother_contact = ref(null);
-const postal = ref(null);
-const marital_status = ref('unmarried');
-const children_number = ref(0);
-const wards = ref([]);
+// const plastName = ref(null);
+// const pfirstName = ref(null);
+// const potherName = ref(null);
+// const pdob_day = ref(null);
+// const pdob_month = ref(null);
+// const pdob_year = ref(null);
+// const passport_number = ref(null);
+// const passport_ex_day = ref(null);
+// const passport_ex_month = ref(null);
+// const passport_ex_year = ref(null);
+// const conf_code = ref(null);
+// const pgender = ref(null);
+// const pcity_ob = ref(null);
+// const pcountry_ob = ref(null);
+// const email = ref(null);
+// const country_live_today = ref(null);
+// const education_level = ref(null);
+// const pcontact = ref(null);
+// const pother_contact = ref(null);
+// const postal = ref(null);
+// const marital_status = ref('unmarried');
+// const children_number = ref(0);
+// const wards = ref([]);
 
-const slastName = ref(null);
-const sfirstName = ref(null);
-const sotherName = ref(null);
-const sdob_day = ref(null);
-const sdob_month = ref(null);
-const sdob_year = ref(null);
-const sgender = ref(null);
-const scity_ob = ref(null);
-const scountry_ob = ref(null);
-const psocial_media = ref({
-  instagram: null,
-  facebook: null,
-  twitter: null,
-});
+// const slastName = ref(null);
+// const sfirstName = ref(null);
+// const sotherName = ref(null);
+// const sdob_day = ref(null);
+// const sdob_month = ref(null);
+// const sdob_year = ref(null);
+// const sgender = ref(null);
+// const scity_ob = ref(null);
+// const scountry_ob = ref(null);
+// const psocial_media = ref({
+//   instagram: null,
+//   facebook: null,
+//   twitter: null,
+// });
 
+const ifSavedPrimeMsg = ref(false);
+const ifSavedSecMsg = ref(false);
+const passportAvail = ref(false);
+const discounted = ref(false);
 const hasSaved = ref(false);
 const isRender = ref(false);
 const readySend = ref(false);
-const wardNumberArr = ref([]);
-const isSavedWardArr = ref([]);
+
+const wardNumberArr: any = ref([]);
+const isSavedWardArr: any = ref([]);
 
 const PRICE_PER_APL = 20;
 const PRICE_PER_WARD = 20;
@@ -103,21 +161,21 @@ const totalPayment = computed(() => {
   } else if (hasSpouse.value && !hasWard.value) {
     return PRICE_PER_APL * 2;
   } else if (!hasSpouse.value && hasWard.value) {
-    return PRICE_PER_APL + PRICE_PER_WARD * children_number.value;
+    return PRICE_PER_APL + PRICE_PER_WARD * apl.children_number;
   } else {
-    return PRICE_PER_APL * 2 + PRICE_PER_WARD * children_number.value;
+    return PRICE_PER_APL * 2 + PRICE_PER_WARD * apl.children_number;
   }
 });
 
 const hasWard = computed(() => {
-  if (children_number.value > 0) {
+  if (apl.children_number > 0) {
     return true;
   } else {
     return false;
   }
 });
 const hasSpouse = computed(() => {
-  if (marital_status.value === 'married') {
+  if (apl.pmarital_status === 'married') {
     return true;
   } else {
     secIMG.value = null;
@@ -129,7 +187,7 @@ const hasSpouse = computed(() => {
 });
 
 const validForDiscount = computed(() => {
-  if (children_number.value >= 4 && hasSpouse.value) {
+  if (apl.children_number >= 4 && hasSpouse.value) {
     return true;
   } else {
     return false;
@@ -138,8 +196,8 @@ const validForDiscount = computed(() => {
 
 const isSavedWard = computed(() => {
   if (
-    isSavedWardArr.value.length == children_number.value ||
-    !children_number.value
+    isSavedWardArr.value.length == apl.children_number ||
+    !apl.children_number
   ) {
     return true;
   } else {
@@ -150,10 +208,10 @@ const isSavedWard = computed(() => {
 const applyVerification = computed(() => {
   if (
     isSavedWard.value &&
-    plastName.value != null &&
-    pfirstName.value != null &&
-    pcontact.value != null &&
-    pother_contact.value != null
+    apl.plastName != null &&
+    apl.pfirstName != null &&
+    apl.pcontact != null &&
+    apl.pother_contact != null
   ) {
     // && hasFiles.value
     return true;
@@ -162,21 +220,32 @@ const applyVerification = computed(() => {
   }
 });
 
-const wardEmitted = e => {
-  wards.value.push(e);
+const wardEmitted = (e: {
+  wlastName: _Null<string>;
+  wfirstName: _Null<string>;
+  wotherName: _Null<string>;
+  wdob_day: _Null<number>;
+  wdob_month: _Null<number>;
+  wdob_year: _Null<number>;
+  wgender: _Null<string>;
+  wcity_ob: _Null<string>;
+  wcountry_ob: _Null<string>;
+  index: number;
+}) => {
+  apl.wards.push(e);
   isSavedWardArr.value.push({});
 };
 
-const wardRemoved = e => {
+const wardRemoved = (e: number) => {
   isSavedWardArr.value.pop();
-  const wardsRemoved = wards.value.filter(ward => ward.index !== e);
-  wards.value = wardsRemoved;
+  const wardsRemoved = apl.wards.filter(ward => ward.index !== e);
+  apl.wards = wardsRemoved;
 };
 
 watchEffect(() => {
-  if (children_number.value) {
+  if (apl.children_number) {
     wardNumberArr.value = [];
-    for (let i = 0; i < children_number.value; i++) {
+    for (let i = 0; i < apl.children_number; i++) {
       wardNumberArr.value.push(i);
     }
   } else {
@@ -185,13 +254,13 @@ watchEffect(() => {
 });
 
 const full = computed(() => {
-  if (!plastName.value || !pfirstName.value) {
+  if (!apl.plastName || !apl.pfirstName) {
     return null;
   } else {
-    return `${plastName.value.toUpperCase().trim()} ${pfirstName.value
+    return `${apl.plastName.toUpperCase().trim()} ${apl.pfirstName
       .toUpperCase()
       .trim()}${
-      potherName.value ? ' ' + potherName.value.toUpperCase().trim() : ''
+      apl.potherName ? ' ' + apl.potherName.toUpperCase().trim() : ''
     }`;
   }
 });
@@ -202,12 +271,14 @@ const renderApl = () => {
 
   editMode.value = false;
   showPrice.value = true;
-  apply.value.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  apply.value!.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
 
   isRender.value = !isRender.value;
   readySend.value = !readySend.value;
-  const applyInput = document.getElementsByClassName('apply-input');
-  const select = document.getElementsByClassName('sel');
+  const applyInput = document.getElementsByClassName(
+    'apply-input'
+  ) as HTMLCollectionOf<HTMLInputElement>;
+  const select = document.getElementsByClassName('sel') as HTMLSelectElement;
 
   for (let i = 0; i < applyInput.length; i++) {
     const input = applyInput[i];
@@ -223,7 +294,7 @@ const renderApl = () => {
     input.classList.add('inputless');
     input.classList.add('text-xl');
     input.classList.remove('text-md');
-    input.disabled = !input.disabled;
+    // input.disabled = !input.disabled;
   }
 };
 
@@ -234,10 +305,12 @@ const cancelRender = () => {
   showPrice.value = false;
   isRender.value = !isRender.value;
   readySend.value = !readySend.value;
-  wards.value = [];
+  apl.wards = [];
   isSavedWardArr.value = [];
-  const applyInput = document.getElementsByClassName('apply-input');
-  const select = document.getElementsByClassName('sel');
+  const applyInput = document.getElementsByClassName(
+    'apply-input'
+  ) as HTMLCollectionOf<HTMLInputElement>;
+  const select = document.getElementsByClassName('sel') as HTMLSelectElement;
 
   for (let i = 0; i < applyInput.length; i++) {
     const input = applyInput[i];
@@ -263,7 +336,7 @@ const handleUsePlaceholder = () => {
   placeholderActive.value = true;
   editMode.value = false;
 
-  aplImg_path.value.primePath = ['avatar.svg'];
+  apl.aplImg_path!.primePath = ['avatar.svg'];
 };
 
 const applyApl = async () => {

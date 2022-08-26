@@ -9,17 +9,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('../components/Dashboard'),
+    component: () => import('../views/Dashboard.vue'),
   },
   {
     path: '/',
     name: 'Authenticate',
-    component: () => import('../components/Authenticate'),
+    component: () => import('../views/Authenticate.vue'),
   },
   {
     path: '/database',
     name: 'Database',
-    component: () => import('../components/Database'),
+    component: () => import('../views/Database.vue'),
   },
   // {
   //   path: '/profile',
@@ -56,7 +56,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/:pathMatch(.*)*',
     name: 'PageNotFound',
-    component: () => import('../components/NotFound'),
+    component: () => import('../views/NotFound.vue'),
   },
 ];
 

@@ -2,8 +2,8 @@
 import { ref, onBeforeMount, computed } from 'vue';
 import Button from 'primevue/button';
 import Chip from 'primevue/chip';
-import { useUserStore } from '../store/userStore.js';
-import { useDashStore } from '../store/dashboardStore.js';
+import { useUserStore } from '../store/userStore';
+import { useDashStore } from '../store/dashboardStore';
 import { storeToRefs } from 'pinia';
 
 const props = defineProps(['slotProps']);

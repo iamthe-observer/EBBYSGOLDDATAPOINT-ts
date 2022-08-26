@@ -25,10 +25,11 @@ const Requests = defineAsyncComponent(
 const Card = defineAsyncComponent(() => import('../components/Card.vue'));
 const { fullname: name } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
-const dailyAplNum = computed(() => useDashStore().getDailyUserAplsNumb);
+const { getTotalUserAplsNumb } = storeToRefs(useDashStore());
+// const dailyAplNum = computed(() => useDashStore().getDailyUserAplsNumb);
 const totalAplNum = computed(() => useDashStore().getTotalUserAplsNumb);
 const dailyServiceSales = computed(() => useDashStore().getDailyServiceSales);
-const { dailyApls } = storeToRefs(useDashStore());
+const { dailyUserApls } = storeToRefs(useDashStore());
 const display = ref(false);
 
 const attrs = ref([
@@ -144,7 +145,7 @@ const attrs = ref([
             <template #body>
               <div class="flex flex-col w-full">
                 <span class="text-xs">Total Applicants Today</span>
-                <span class="text-2xl">{{ dailyAplNum || 0 }}</span>
+                <span class="text-2xl">{{ getTotalUserAplsNumb || 0 }}</span>
               </div>
             </template>
           </Card>
@@ -176,7 +177,7 @@ const attrs = ref([
                 :closable="false"
                 :style="{ width: '60%' }"
                 :draggable="false"
-                :maximizable="dailyApls.length != 0"
+                :maximizable="dailyUserApls.length != 0"
                 contentClass="pt-[24px]"
               >
                 <template #header>
@@ -196,12 +197,12 @@ const attrs = ref([
                 <div class="flex justify-center">
                   <span
                     class="text-center font-semibold"
-                    v-if="dailyApls.length == 0"
+                    v-if="dailyUserApls.length == 0"
                     >No Applied Applicants Today!</span
                   >
                   <DataView
-                    v-if="dailyApls.length > 0"
-                    :value="dailyApls"
+                    v-if="dailyUserApls.length > 0"
+                    :value="dailyUserApls"
                     layout="list"
                     class="w-full mx-4"
                     :data-key="'data'"

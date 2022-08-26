@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watchEffect, onMounted } from 'vue';
 import { useAnnStore } from '../store/annStore';
-import Toggle from '../composables/toggle.vue';
+import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';

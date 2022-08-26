@@ -96,21 +96,21 @@ onMounted(() => {
             class="w-fit max-w-[30%] h-[300px] flex flex-col p-3 justify-center items-center bg-indigo-50 rounded-md gap-3 font-Outfit text-bold"
           >
             <img
-              :src="store.primeImg"
+              :src="store.aplImg?.toString()"
               class="w-[100px] h-[100px] rounded-lg outline outline-[rgb(255,255,255)] outline-4"
             />
             <p class="font-bold text-center">
-              {{ store.currentRequest.modify_apl.fullName }}
+              {{ store.currentRequest?.modify_apl.fullName }}
             </p>
             <p class="uppercase">
               {{
-                store.currentRequest.modify_apl.pcontact
-                  ? store.currentRequest.modify_apl.pcontact
+                store.currentRequest?.modify_apl.pcontact
+                  ? store.currentRequest?.modify_apl.pcontact
                   : 'Contact Not Available'
               }}
             </p>
-            <p :class="store.statusClass(store.currentRequest.status)">
-              {{ store.currentRequest.status }}
+            <p :class="store.statusClass(store.currentRequest!.status)">
+              {{ store.currentRequest?.status }}
             </p>
           </div>
           <div
@@ -120,7 +120,7 @@ onMounted(() => {
               Reason for Request :
             </h3>
             <div class="p-3 flex-1 w-full h-max bg-white rounded-md uppercase">
-              {{ store.currentRequest.reason_body }}
+              {{ store.currentRequest!.reason_body }}
             </div>
           </div>
         </div>

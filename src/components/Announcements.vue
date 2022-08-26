@@ -1,46 +1,52 @@
-<script setup>
-import { ref, computed, watchEffect, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, watchEffect, onMounted, Ref } from 'vue';
 import { useAnnStore } from '../store/annStore';
-import Toggle from '../composables/toggle.vue';
+import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
+import { Announcement } from '../interfaces/interfaces';
+import { _Null } from '../types/types';
+import { useDashStore } from '../store/dashboardStore';
 
 const annStore = useAnnStore();
 const { ann } = storeToRefs(annStore);
 const { loading } = storeToRefs(annStore);
 const refreshAnn = ref(0);
 const viewAnn = ref(false);
-const currentAnn = ref(null);
+const currentAnn: Ref<_Null<Announcement>> = ref(null);
 
+const todayAnnArr = computed<Announcement[]>(() => {
+  return ann.value!.filter(
+    y =>
+      useDashStore().fd(new Date(y.created_at)) ===
+      useDashStore().fd(new Date())
+  );
+});
 onMounted(() => {
   annStore.getAnn();
 });
 
-const annArr = ref({
-  allAnnArr: ann.value.all,
-  todayAnnArr: ann.value.today,
-});
-let currentAnnArr = ref('todayAnnArr');
+let currentAnnArr = ref<Announcement[] | null>([]);
 
-const announArr = computed(() => {
-  return annArr.value[currentAnnArr.value];
-});
+// let getAnnounArr = computed(() => {
+//   return announ[currentAnnArr.value];
+// });
 
 const isAnn = computed(() => {
-  if (announArr.value.length == 0) return false;
+  if (currentAnnArr.value!.length == 0) return false;
   return true;
 });
 
-const toggleEvt = evt => {
-  if (evt == 'All') {
-    currentAnnArr.value = 'allAnnArr';
+const toggleEvt = (evt: boolean) => {
+  if (!evt) {
+    currentAnnArr.value = ann.value;
   } else {
-    currentAnnArr.value = 'todayAnnArr';
+    currentAnnArr.value = todayAnnArr.value;
   }
 };
 
-const changeDate = date => {
+const changeDate = (date: Date) => {
   const day = new Date(date).toLocaleDateString('en-us', {
     weekday: 'long',
     year: 'numeric',
@@ -51,22 +57,13 @@ const changeDate = date => {
   return day;
 };
 
-watchEffect(() => {
-  if (ann) {
-    annArr.value = {
-      allAnnArr: ann.value.all,
-      todayAnnArr: ann.value.today,
-    };
-  }
-});
-
 const refresh = () => {
   annStore.resetAnn();
   annStore.getAnn();
   refreshAnn.value++;
 };
 
-const annStatus_class = urg => {
+const annStatus_class = (urg: string) => {
   if (urg == 'important') {
     return `text-xs w-[85px] text-center text-red-600 bg-red-200 px-2 py-1 rounded-full group-hover:outline group-hover:outline-2 group-hover:outline-red-600`;
   } else if (urg == 'high') {
@@ -76,7 +73,7 @@ const annStatus_class = urg => {
   }
 };
 
-const handleOpenAnn = ann => {
+const handleOpenAnn = (ann: Announcement, index: number) => {
   viewAnn.value = true;
   currentAnn.value = ann;
 };
@@ -89,7 +86,7 @@ const handleOpenAnn = ann => {
     <div class="flex justify-between">
       <h2 class="text-xl font-extrabold">Announcements</h2>
       <div class="min-w-[200px] min-h-[30px] flex gap-3 items-center">
-        <Toggle @toggleVal="toggleEvt" />
+        <Toggle @update="toggleEvt" />
         <i
           class="pi pi-refresh font-bold text-lg mr-2 cursor-pointer"
           @click="refresh"
@@ -112,7 +109,11 @@ const handleOpenAnn = ann => {
       class="flex flex-col overflow-y-scroll bg-gray-100 rounded-xl"
       :key="refreshAnn"
     >
-      <div v-for="(ann, i) in announArr" :key="i" @click="handleOpenAnn(ann)">
+      <div
+        v-for="(ann, i) in currentAnnArr"
+        :key="i"
+        @click="handleOpenAnn(ann, i)"
+      >
         <div
           class="flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 rounded-xl py-3 group"
         >
@@ -162,10 +163,10 @@ const handleOpenAnn = ann => {
             class="font-bold flex flex-col max-w-[70%] p-3 rounded-md bg-purple-50 w-full h-[300px]"
           >
             <h3 class="text-center font-bold text-[2em] uppercase">
-              {{ currentAnn.subject }}
+              {{ currentAnn!.subject }}
             </h3>
             <div class="p-3 flex-1 w-full h-max bg-white rounded-md uppercase">
-              {{ currentAnn.body }}
+              {{ currentAnn!.body }}
             </div>
           </div>
         </div>

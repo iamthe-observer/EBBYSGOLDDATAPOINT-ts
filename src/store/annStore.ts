@@ -5,21 +5,14 @@ import * as interfaces from '../interfaces/interfaces';
 import * as supaClient from '../composables/supaClient';
 
 export const useAnnStore = defineStore('announcements', () => {
-  const ann: Ref<{
-    all: interfaces.Announcement[] | null;
-    today: interfaces.Announcement[] | null;
-  }> = ref(
-    useStorage('announcements', {
-      all: [],
-      today: [],
-    })
+  const ann: Ref<interfaces.Announcement[] | null> = ref(
+    useStorage('announcements', [])
   );
   const loading = ref<boolean>(false);
   const inputLoading = ref<boolean>(false);
 
   const resetAnn = (): void => {
-    ann.value.all = [];
-    ann.value.today = [];
+    ann.value = [];
   };
 
   const changeDate = (date: Date): string => {
@@ -38,8 +31,8 @@ export const useAnnStore = defineStore('announcements', () => {
 
     const data = await supaClient.getData('announcements', '*');
     if (!data) return (loading.value = false);
-    ann.value.all = data!.reverse();
-    ann.value.today = data!.reverse().filter(ann => {
+    // ann.value = data!.reverse();
+    ann.value = data!.reverse().filter(ann => {
       if (changeDate(ann.created_at) == changeDate(new Date())) {
         return ann;
       }
