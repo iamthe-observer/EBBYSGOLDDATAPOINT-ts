@@ -3,11 +3,11 @@ import { ref, onMounted, computed } from 'vue';
 import 'animate.css';
 import { storeToRefs } from 'pinia';
 import { _Null } from '../types/types';
-// import { useProfileStore } from '../store/profileStore';
-// import { useDashStore } from '../store/dashboardStore';
+import { useProfileStore } from '../store/profileStore';
+import { useDashStore } from '../store/dashboardStore';
 
-// const { uploading } = storeToRefs(useProfileStore());
-// const { role } = storeToRefs(useProfileStore());
+const { uploading } = storeToRefs(useProfileStore());
+const { role } = storeToRefs(useProfileStore());
 interface Props {
   username: string;
   avatar_url: _Null<string>;
@@ -17,15 +17,15 @@ const props = defineProps<Props>();
 
 const dashboard = ref<object | null>(null);
 const contact = ref(null);
-// const { version } = storeToRefs(useDashStore());
+const { version } = storeToRefs(useDashStore());
 
-// const user_role = computed<string>(() => {
-//   if (role.value === 'user') {
-//     return `font-medium bg-[rgba(255,255,255,.3)] px-2 rounded-lg text-white animate__animated animate__fadeIn text-sm`;
-//   } else {
-//     return `font-medium bg-[rgba(255,255,255,.3)] px-2 rounded-lg text-white animate__animated relative animate__fadeIn text-sm after:content-['ADMIN'] after:absolute after:px-[0.5rem]  after:bg-red-600 after:outline after:outline-2 after:outline-white after:rounded-full after:text-center after:text-[.6rem] after:text-slate-50 after:font-extrabold after:content-['ADMIN'] after:shadow-xl after:left-1/2 after:translate-x-[-50%] after:bottom-[-120%]`;
-//   }
-// });
+const user_role = computed<string>(() => {
+  if (role.value) {
+    return `font-medium bg-[rgba(255,255,255,.3)] px-2 rounded-lg text-white animate__animated animate__fadeIn text-sm`;
+  } else {
+    return `font-medium bg-[rgba(255,255,255,.3)] px-2 rounded-lg text-white animate__animated relative animate__fadeIn text-sm after:content-['ADMIN'] after:absolute after:px-[0.5rem]  after:bg-red-600 after:outline after:outline-2 after:outline-white after:rounded-full after:text-center after:text-[.6rem] after:text-slate-50 after:font-extrabold after:content-['ADMIN'] after:shadow-xl after:left-1/2 after:translate-x-[-50%] after:bottom-[-120%]`;
+  }
+});
 
 onMounted(() => {
   const navlinks: any = dashboard.value;
@@ -36,6 +36,12 @@ onMounted(() => {
     });
   });
 });
+
+const emit = defineEmits<{ (e: 'logout', logoutVal: boolean): void }>();
+
+const handleLogout = () => {
+  emit('logout', false);
+};
 </script>
 
 <template>
@@ -58,17 +64,17 @@ onMounted(() => {
             "
             class="w-15 rounded-full aspect-square border-2 animate__animated animate__fadeIn"
           />
-          <!-- <i
+          <i
             v-else-if="uploading"
             class="pi pi-spin pi-spinner text-[2rem]"
-          ></i> -->
+          ></i>
           <img
             v-else
             src="../assets/images/avatar.svg"
             class="w-15 rounded-full aspect-square border-2 animate__animated animate__fadeIn"
           />
         </section>
-        <!-- <span :class="user_role">{{ username }}</span> -->
+        <span :class="user_role">{{ username }}</span>
       </div>
       <div
         ref="dashboard"
@@ -114,7 +120,7 @@ onMounted(() => {
     <div class="flex flex-col items-center gap-4">
       <div
         class="transition-all hover:bg-indigo-800 w-[90px] rounded-xl border-none justify-center duration-200 animate__animated animate__fadeIn"
-        @click="() => $emit('logout', false)"
+        @click="handleLogout"
       >
         <img
           class="invert px-6 py-2 aspect-auto cursor-pointer ease-linear"
@@ -124,7 +130,7 @@ onMounted(() => {
         <!-- <img src="../assets/icons/world.png" class="company-logo iconpack" />
       <span>EBBYSGOLD</span> -->
       </div>
-      <!-- <span class="text-[rgba(255,255,255,0.24)]">V.{{ version }}</span> -->
+      <span class="text-[rgba(255,255,255,0.24)]">V.{{ version }}</span>
     </div>
   </nav>
 </template>

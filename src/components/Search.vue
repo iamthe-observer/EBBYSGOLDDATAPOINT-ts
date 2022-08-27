@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watchEffect } from 'vue';
 import aplcard from './aplcard.vue';
 import { supabase } from '../supabase/supabase';
@@ -7,17 +7,19 @@ import { storeToRefs } from 'pinia';
 import Chip from 'primevue/chip';
 import Calendar from 'primevue/calendar';
 import InputSwitch from 'primevue/inputswitch';
-import gradientButton from '../composables/gradientButton.vue';
+import gradientButton from '../components/gradientButton.vue';
+import { _Null } from '../types/types';
+import { Applicant } from '../interfaces/interfaces';
 
 const loading = ref(false);
 const isAplList = ref(false);
 const toSearch = ref('');
-const dateSearch = ref(null);
-const searchform = ref('');
-const searchResults = ref([]);
-const searchMessage = ref('');
+const dateSearch = ref<Date | undefined>(undefined);
+const searchform = ref<HTMLFormElement | null>(null);
+const searchResults = ref<Applicant[] | never[]>([]);
+const searchMessage = ref<_Null<string>>(null);
 const searchStore = useSearchStore();
-const searchInput = ref(null);
+const searchInput = ref<HTMLInputElement | null>(null);
 const searchType = ref(false);
 const { search } = storeToRefs(useSearchStore());
 
@@ -36,13 +38,13 @@ const ifSearch = computed(() => {
 
 watchEffect(() => {
   if (searchType.value == false) {
-    dateSearch.value = null;
+    dateSearch.value = undefined;
   }
 });
 
-function debounce(cb, delay = 1000) {
-  let timeout;
-  return (...args) => {
+function debounce(cb: Function, delay = 1000) {
+  let timeout: number | undefined;
+  return (...args: any[]) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       cb(...args);
@@ -66,10 +68,10 @@ const getSearch = async () => {
         isAplList.value = true;
         searchResults.value = searches;
         searchMessage.value = '';
-        searchInput.value.value = '';
+        searchInput.value!.value = '';
       } else {
         isAplList.value = false;
-        searchResults.value = '';
+        searchResults!.value = [];
         searchMessage.value = 'No Applicants found';
         setTimeout(() => {
           searchMessage.value = '';
@@ -77,15 +79,16 @@ const getSearch = async () => {
       }
 
       if (isAplList.value) {
-        const searchbox = document.querySelector('.search');
+        const searchbox = document.querySelector('.search') as HTMLDivElement;
         searchbox.classList.remove('centered');
-        searchform.value.classList.remove('search-field');
-        searchform.value.classList.add('search-flow');
+        searchform.value!.classList.remove('search-field');
+        searchform.value!.classList.add('search-flow');
       }
       loading.value = false;
-    } catch (error) {
+      return searches;
+    } catch (error: any) {
       loading.value = false;
-      searchMessage.value = error;
+      searchMessage.value = error.message;
       setTimeout(() => {
         searchMessage.value = '';
       }, 4000);
@@ -109,7 +112,7 @@ const getSearchwDate = async () => {
         .ilike('fullName', `%${toSearch.value}%`)
         .eq(
           'created_at_date',
-          new Date(dateSearch.value).toLocaleString().split(',')[0]
+          new Date(dateSearch.value!).toLocaleString().split(',')[0]
         );
 
       if (!searches) throw error;
@@ -118,10 +121,10 @@ const getSearchwDate = async () => {
         isAplList.value = true;
         searchResults.value = searches;
         searchMessage.value = '';
-        searchInput.value.value = '';
+        searchInput.value!.value! = '';
       } else {
         isAplList.value = false;
-        searchResults.value = '';
+        searchResults.value = [];
         searchMessage.value = 'No Applicants found';
         setTimeout(() => {
           searchMessage.value = '';
@@ -129,15 +132,15 @@ const getSearchwDate = async () => {
       }
 
       if (isAplList.value) {
-        const searchbox = document.querySelector('.search');
+        const searchbox = document.querySelector('.search') as HTMLDivElement;
         searchbox.classList.remove('centered');
-        searchform.value.classList.remove('search-field');
-        searchform.value.classList.add('search-flow');
+        searchform.value!.classList.remove('search-field');
+        searchform.value!.classList.add('search-flow');
       }
       loading.value = false;
-    } catch (error) {
+    } catch (error: any) {
       loading.value = false;
-      searchMessage.value = error;
+      searchMessage.value = error.message;
       setTimeout(() => {
         searchMessage.value = '';
       }, 4000);
@@ -156,7 +159,7 @@ const searchWay = () => {
   return getSearchwDate();
 };
 
-const addRecentSearch = evt => {
+const addRecentSearch = (evt: any) => {
   searchStore.setRecentSearch(evt);
 };
 
@@ -168,22 +171,22 @@ watchEffect(() => {
 });
 
 onMounted(() => {
-  searchInput.value.focus();
+  searchInput.value!.focus();
   const searchbox = document.querySelector('.search');
-  searchbox.classList.add('centered');
+  searchbox!.classList.add('centered');
 
   watchEffect(() => {
     if (searchResults.value.length == 0 && toSearch.value == '') {
-      searchbox.classList.add('centered');
-      searchform.value.classList.add('search-field');
-      searchform.value.classList.remove('search-flow');
+      searchbox!.classList.add('centered');
+      searchform.value!.classList.add('search-field');
+      searchform.value!.classList.remove('search-flow');
     }
   });
   watchEffect(() => {
     if (!isAplList.value) {
-      searchbox.classList.add('centered');
-      searchform.value.classList.add('search-field');
-      searchform.value.classList.remove('search-flow');
+      searchbox!.classList.add('centered');
+      searchform.value!.classList.add('search-field');
+      searchform.value!.classList.remove('search-flow');
     }
   });
 });
@@ -196,7 +199,6 @@ onMounted(() => {
     >
       <form
         ref="searchform"
-        @submit.prevent="search"
         class="flex items-center gap-[10px] mx-auto w-[60%] flex-col"
       >
         <input
@@ -246,7 +248,6 @@ onMounted(() => {
               :label="recent.fullName"
               v-for="(recent, i) in search.recentSearch"
               class="cursor-pointer w-fit"
-              :image="recent.apl_image_url"
               @click="
                 $router.push({
                   name: 'AplDetails',

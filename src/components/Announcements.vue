@@ -40,9 +40,9 @@ const isAnn = computed(() => {
 
 const toggleEvt = (evt: boolean) => {
   if (!evt) {
-    currentAnnArr.value = ann.value;
-  } else {
     currentAnnArr.value = todayAnnArr.value;
+  } else {
+    currentAnnArr.value = ann.value;
   }
 };
 

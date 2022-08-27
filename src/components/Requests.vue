@@ -2,11 +2,11 @@
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import { useRequestStore } from '../store/requestStore';
-import { onMounted } from 'vue';
+import { onBeforeMount } from 'vue';
 
 const store = useRequestStore();
 
-onMounted(() => {
+onBeforeMount(() => {
   store.getRequests();
 });
 </script>
@@ -96,7 +96,7 @@ onMounted(() => {
             class="w-fit max-w-[30%] h-[300px] flex flex-col p-3 justify-center items-center bg-indigo-50 rounded-md gap-3 font-Outfit text-bold"
           >
             <img
-              :src="store.aplImg?.toString()"
+              :src="store.primePath"
               class="w-[100px] h-[100px] rounded-lg outline outline-[rgb(255,255,255)] outline-4"
             />
             <p class="font-bold text-center">

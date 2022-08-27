@@ -1,15 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useDashStore } from '../store/dashboardStore';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
+import { _Null } from '../types/types';
 
 const { dashboard } = storeToRefs(useDashStore());
 const { loading } = storeToRefs(useDashStore());
 
-const nextBtn = ref(null);
-const prevBtn = ref(null);
-const pageNumber = ref(0);
+const nextBtn = ref<HTMLButtonElement | null>(null);
+const prevBtn = ref<HTMLButtonElement | null>(null);
+const pageNumber = ref<number>(0);
 
 // TODO figure out how to debounce with page loading
 
@@ -27,7 +28,7 @@ onMounted(() => {
   useDashStore().paginateApls(pageNumber.value);
 });
 
-function dateOfBirth(dd, mm, yy) {
+function dateOfBirth(dd: _Null<number>, mm: _Null<number>, yy: _Null<number>) {
   return `${dd}/${mm}/${yy}`;
 }
 
@@ -39,9 +40,9 @@ const paginatedApls = computed(() => {
   return dashboard.value.paginatedApls;
 });
 
-const handlePage = async mode => {
+const handlePage = async (mode: 'add' | 'sub') => {
   if (mode == 'add') {
-    if (paginatedApls.value.length == 10) {
+    if (paginatedApls.value!.length == 10) {
       pageNumber.value += 1;
       await useDashStore().paginateApls(pageNumber.value);
     }
@@ -53,7 +54,7 @@ const handlePage = async mode => {
   }
 };
 
-const aplListNumber = index => {
+const aplListNumber = (index: number) => {
   if (pageNumber.value == 0) {
     return index + 1;
   } else {
@@ -75,7 +76,7 @@ const aplListNumber = index => {
         >
           Applicants List
         </h1>
-        <table class="table mx-auto w-full" v-if="apls.length > 0">
+        <table class="table mx-auto w-full" v-if="apls!.length > 0">
           <!-- head -->
           <thead>
             <tr>
@@ -98,7 +99,7 @@ const aplListNumber = index => {
                 <div class="avatar">
                   <div class="mask mask-squircle w-12 h-12">
                     <img
-                      :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${apl.aplImg_path.primePath[0]}`"
+                      :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${apl.aplImg_path.primePath![0]}`"
                       alt="Primary Apl Image"
                     />
                   </div>
@@ -150,12 +151,12 @@ const aplListNumber = index => {
         </table>
         <div
           class="w-full min-h-full grid place-items-center font-bold text-[2.5em]"
-          v-if="apls.length == 0"
+          v-if="apls!.length == 0"
         >
           <span> No Applicants Yet! </span>
         </div>
       </div>
-      <div v-if="apls.length > 0" class="pagination w-2/5 mx-auto mt-5">
+      <div v-if="apls!.length > 0" class="pagination w-2/5 mx-auto mt-5">
         <div class="btn-group">
           <button @click="handlePage('sub')" ref="prevBtn" class="btn">
             «

@@ -24,7 +24,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from '@vue/runtime-core';
 
 const emit = defineEmits({
@@ -35,7 +35,7 @@ const emit = defineEmits({
   },
 });
 
-const selectTab = (e, link) => {
+const selectTab = (e: any, link: any) => {
   let sidelinks = e.target.parentNode.children;
 
   for (let i = 0; i < sidelinks.length; i++) {
@@ -48,9 +48,9 @@ const selectTab = (e, link) => {
   emit('contentChange', link);
 };
 
-const sL = ref(null);
+const sL = ref<HTMLDivElement | null>(null);
 
 const mount = onMounted(() => {
-  sL.value.children[0].classList.add('selected');
+  sL.value!.children[0].classList.add('selected');
 });
 </script>

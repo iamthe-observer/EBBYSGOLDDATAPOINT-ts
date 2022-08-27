@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { useProfileStore } from '../store/profileStore';
 import { useRequestStore } from '../store/requestStore';
 import { storeToRefs } from 'pinia';
@@ -10,18 +10,18 @@ import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
 import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
+import { Requests } from '../interfaces/interfaces';
 
 const { requests } = storeToRefs(useRequestStore());
 const { Users } = storeToRefs(useProfileStore());
 const toast = useToast();
 const router = useRouter();
 
-function getUser4AplInfo(request_user_id) {
-  let user_apply = Users.value.find(user => user.id == request_user_id);
-  return user_apply;
+function getUser4AplInfo(request_user_id: string) {
+  return Users.value.find(user => user.id == request_user_id);
 }
 
-async function handleApprove(request) {
+async function handleApprove(request: Requests) {
   if (request.modify_type == 'edit') {
     try {
       const { data: updateApl, error: errorUpdate } = await supabase
@@ -50,7 +50,7 @@ async function handleApprove(request) {
       setTimeout(() => {
         useRequestStore().getRequests();
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       toast.add({
         severity: 'error',
@@ -87,7 +87,7 @@ async function handleApprove(request) {
       setTimeout(() => {
         useRequestStore().getRequests();
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       toast.add({
         severity: 'error',
@@ -99,7 +99,7 @@ async function handleApprove(request) {
   }
 }
 
-async function handleReject(request) {
+async function handleReject(request: Requests) {
   const { data: acceptedRequest, error: requestError } = await supabase
     .from('requests')
     .update({ status: 'rejected' })
@@ -119,7 +119,7 @@ async function handleReject(request) {
   }, 2000);
 }
 
-function handleDeleteRequest(id) {
+function handleDeleteRequest(id: string) {
   useRequestStore().deleteRequest(id);
   toast.add({
     severity: 'success',
@@ -130,12 +130,14 @@ function handleDeleteRequest(id) {
   useRequestStore().getRequests();
 }
 
-const handleViewRequest = request => {
+const handleViewRequest = (request: Requests) => {
   useRequestStore().setCurrRequest(request);
   router.push({ name: 'ViewRequest' });
 };
 
-const avatarSrc = path => {
+const avatarSrc = (path: string) => {
+  if (!path)
+    return 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg';
   return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${path}`;
 };
 </script>
@@ -176,7 +178,7 @@ const avatarSrc = path => {
                 <div class="avatar">
                   <div class="mask mask-squircle w-12 h-12">
                     <img
-                      :src="avatarSrc(request.modify_apl.aplImg_path.primePath)"
+                      :src="avatarSrc(request.modify_apl.aplImg_path.primePath![0])"
                       alt="Primary Apl Image"
                     />
                   </div>
@@ -190,17 +192,17 @@ const avatarSrc = path => {
                       {{ request.modify_apl.fullName }}
                     </div>
                     <div class="text-sm opacity-50"></div>
-                    <Chip
+                    <!-- <Chip
                       :label="`Applied by ${
-                        getUser4AplInfo(request.user_id).username
+                        getUser4AplInfo(request.user_id)!.username
                       }`"
                       :image="
-                        getUser4AplInfo(request.user_id).avatar_url
-                          ? getUser4AplInfo(request.user_id).avatar_url
+                        getUser4AplInfo(request.user_id)!.avatar_url
+                          ? getUser4AplInfo(request.user_id)!.avatar_url
                           : `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`
                       "
                       class="h-[25px] mr-2 font-bold text-sm my-2 font-Outfit"
-                    />
+                    /> -->
                   </div>
                 </div>
               </td>

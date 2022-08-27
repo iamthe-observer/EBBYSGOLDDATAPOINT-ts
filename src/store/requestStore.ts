@@ -4,7 +4,6 @@ import { ref, Ref, ComputedRef, computed } from 'vue';
 import { useProfileStore } from './profileStore';
 import { storeToRefs } from 'pinia';
 import { Applicant, Requests } from '../interfaces/interfaces';
-import { deleteData, getData } from '../composables/supaClient';
 
 export const useRequestStore = defineStore('requests', () => {
   const loading = ref(false);
@@ -41,24 +40,23 @@ export const useRequestStore = defineStore('requests', () => {
   });
 
   const getRequests = async () => {
-    if (role.value) {
+    loading.value = true;
+    if (!role.value) {
       try {
-        loading.value = true;
-        const data = await getData(
-          'requests',
-          '*',
-          'user_id',
-          supabase.auth.user()!.id
-        );
-        if (data) requests.value = data.reverse();
+        const { data, error } = await supabase
+          .from('requests')
+          .select('*')
+          .eq('user_id', supabase.auth.user()!.id);
+        if (error) throw error;
+        requests.value = data;
+
+        // requests.value = data!.sort(
+        // (a: any, b: any) => new Date(b.created_at) - new Date(a.created_at)
+        // );
         loading.value = false;
-        // const { data, error } = await supabase
-        //   .from('requests')
-        //   .select('*')
-        //   .eq('user_id', supabase.auth.user().id);
-        //   requests.value = data!.sort(
-        //     (a: any, b: any) => new Date(b.created_at) - new Date(a.created_at)
-        //   );
+        console.log(data);
+        console.log(role.value);
+
         return data;
       } catch (err: any) {
         loading.value = false;
@@ -67,14 +65,15 @@ export const useRequestStore = defineStore('requests', () => {
     } else {
       try {
         loading.value = true;
-        const data = await getData('requests', '*');
+        const { data, error } = await supabase.from('requests').select('*');
+        if (error) throw error;
         loading.value = false;
-        if (data) requests.value = data.reverse();
-        // const { data, error } = await supabase.from('requests').select('*');
-        // requests.value = data.sort(
-        //   (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        // );
-        // .reverse()
+        requests.value = data;
+        let req = data.map((x: Requests) => x.modify_apl.aplImg_path.primePath);
+        console.log(req);
+
+        // console.log(data);
+
         return data;
       } catch (err: any) {
         loading.value = false;
@@ -90,10 +89,8 @@ export const useRequestStore = defineStore('requests', () => {
     loading.value = false;
   };
 
-  const aplImg = computed(() => {
-    return currentRequest.value!.modify_apl.aplImg_path?.filter(
-      x => x.primePath![0]
-    );
+  const primePath: ComputedRef<string> = computed(() => {
+    return currentRequest.value!.modify_apl.aplImg_path.primePath![0];
   });
 
   const handleOpenAplRequest = (request: Requests) => {
@@ -108,24 +105,24 @@ export const useRequestStore = defineStore('requests', () => {
   };
 
   const deleteRequest = async (id: string) => {
-    // try {
-    //   const { data, error } = await supabase
-    //     .from('requests')
-    //     .delete()
-    //     .eq('id', id);
-    //   if (error) throw error;
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    try {
+      const { data, error } = await supabase
+        .from('requests')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      console.log(error);
+    }
 
-    const data = deleteData('requests', 'id', id);
+    // const data = deleteData('requests', 'id', id);
   };
 
   return {
     deleteRequest,
     curr_request,
     setCurrRequest,
-    aplImg,
+    primePath,
     refresh,
     getRequests,
     isRequest,

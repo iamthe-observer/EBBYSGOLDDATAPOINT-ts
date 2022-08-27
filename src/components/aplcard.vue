@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
 
 const props = defineProps(['apl']);
-const options = {
+const options: object = {
   weekday: 'long',
   year: 'numeric',
   month: 'short',
@@ -16,14 +16,17 @@ const aplImg = computed(() => {
     : `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`;
 });
 
-const rSearchParams = reactive({
+const rSearchParams = reactive<{
+  fullName: string;
+  apl_id: string;
+}>({
   fullName: props.apl.fullName,
   apl_id: props.apl.apl_id,
 });
 
 // TODO LEARN GRID: RECENT SEARCHES
 
-const changeDate = date => {
+const changeDate = (date: Date) => {
   const day = new Date(date).toLocaleDateString('en-us', options);
 
   return day;

@@ -2,12 +2,6 @@
   <div class="loader">Loading...</div>
 </template>
 
-<script>
-export default {
-  name: 'Loading',
-};
-</script>
-
 <style>
 .loader,
 .loader:before,

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onBeforeMount } from 'vue';
 import Card from './Card.vue';
 import { storeToRefs } from 'pinia';
@@ -12,6 +12,7 @@ import DataView from 'primevue/dataview';
 import UserDailyReportCard from './userDailyReportCard.vue';
 import AdminAnn from './AdminAnn.vue';
 import { useRequestStore } from '../store/requestStore';
+import { ProfileData } from '../interfaces/interfaces';
 
 const { dashboard } = storeToRefs(useDashStore());
 const { dailyUserSignIns } = storeToRefs(useDashStore());
@@ -20,7 +21,7 @@ const { getDailyServiceSales } = storeToRefs(useDashStore());
 const viewDailyUsers = ref(false);
 const viewDailyReport = ref(false);
 
-const ifUserSignedIn = user => {
+const ifUserSignedIn = (user: ProfileData) => {
   return dailyUserSignIns.value.filter(
     x =>
       x.user_id === user.id &&
@@ -28,7 +29,7 @@ const ifUserSignedIn = user => {
   )[0];
 };
 
-const lastSeenUser = user => {
+const lastSeenUser = (user: ProfileData) => {
   let val = ifUserSignedIn(user);
   let hh = new Date(val.created_at).getHours();
   let mm = new Date(val.created_at).getMinutes();
@@ -51,7 +52,7 @@ const totalNumUsers = computed(() => {
   return Users.value.length;
 });
 const totalApls = computed(() => {
-  return dashboard.value.apls.length;
+  return dashboard.value.apls!.length;
 });
 </script>
 
@@ -204,7 +205,7 @@ const totalApls = computed(() => {
           :value="Users"
           layout="list"
           class="w-full overflow-hidden"
-          :dataKey="Users.id"
+          :dataKey="'bean'"
         >
           <template #list="slotProps">
             <div

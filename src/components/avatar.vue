@@ -1,6 +1,14 @@
-<script setup>
-const props = defineProps(['url', 'editMode', 'uploading']);
-const emit = defineEmits(['edit']);
+<script setup lang="ts">
+// const props = defineProps(['url', 'editMode', 'uploading']);
+const props = defineProps<{
+  url: string|null;
+  editMode: boolean;
+  uploading: boolean;
+}>();
+const emit = defineEmits<{
+  (e: 'edit', editMode: boolean): void;
+}>();
+// const emit = defineEmits(['edit']);
 </script>
 
 <template>

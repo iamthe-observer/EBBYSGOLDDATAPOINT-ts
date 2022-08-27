@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onBeforeMount } from 'vue';
 import Navigation from './components/Navigation.vue';
 import Authenticate from './views/Authenticate.vue';
 import { useSearchStore } from './store/searchStore';
@@ -11,7 +11,6 @@ import { useAuthStore } from './store/AuthStore';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { supabase } from './supabase/supabase';
-import { getData } from './composables/supaClient';
 
 type emitLogin = {
   val: boolean;
@@ -70,7 +69,7 @@ supabase.auth.onAuthStateChange(event => {
   }
 });
 
-onMounted(() => {
+onBeforeMount(() => {
   const currentSession = supabase.auth.session();
   // const currentProfile = useProfileStore().profile;
 
@@ -84,7 +83,7 @@ onMounted(() => {
     router.push({ name: 'Authenticate' });
   }
 
-  //   dailySignIn();
+    dailySignIn();
 });
 
 const checkDailySignIn = async () => {

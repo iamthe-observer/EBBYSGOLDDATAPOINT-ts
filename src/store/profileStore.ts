@@ -5,6 +5,7 @@ import { useStorage } from '@vueuse/core';
 import { v4 as uuidv4 } from 'uuid';
 import { DefaultProfile, ProfileData } from '../interfaces/interfaces';
 import * as SupaClient from '../composables/supaClient';
+import { _Null } from '../types/types';
 
 export const useProfileStore = defineStore('profile', () => {
   const profile = ref(useStorage<ProfileData>('profile', null));
@@ -28,9 +29,10 @@ export const useProfileStore = defineStore('profile', () => {
 
   // computed
 
-  const url = computed(() =>
+  const url = computed<_Null<string>>(() =>
     profile.value ? profile.value.avatar_url : placeholder_avatar
   );
+
   const username = computed(() =>
     profile.value ? profile.value.username : 'user'
   );

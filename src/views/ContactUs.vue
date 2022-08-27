@@ -3,7 +3,7 @@ import Carousel from 'primevue/carousel';
 import { useDashStore } from '../store/dashboardStore';
 import { storeToRefs } from 'pinia';
 
-const { super_contact_info } = storeToRefs(useDashStore());
+const { dashboard } = storeToRefs(useDashStore());
 </script>
 
 <template>
@@ -22,7 +22,7 @@ const { super_contact_info } = storeToRefs(useDashStore());
 
       <div class="h-full mx-auto flex gap-2 items-center">
         <div
-          v-for="(info, i) in super_contact_info"
+          v-for="(info, i) in dashboard.super_contact_info"
           :key="i"
           class="card min-h-[300px] w-fit bg-gradient-to-br from-purple-300 to-indigo-300 shadow-xl rounded-xl text-white"
         >

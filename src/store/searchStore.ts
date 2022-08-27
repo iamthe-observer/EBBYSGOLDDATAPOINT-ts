@@ -5,7 +5,7 @@ import { SearchParams } from '../interfaces/interfaces';
 
 export const useSearchStore = defineStore('search', () => {
   const search = ref(
-    useStorage<{ recentSearch: SearchParams[] }>('search', {
+    useStorage<{ recentSearch: SearchParams[]}>('search', {
       recentSearch: [],
     })
   );

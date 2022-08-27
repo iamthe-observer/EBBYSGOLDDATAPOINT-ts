@@ -8,7 +8,7 @@ export interface Announcement {
   id: number;
   created_at: Date;
   subject: string;
-  body: string;
+  body: _Null<string>;
   urgency: string;
 }
 
@@ -68,13 +68,11 @@ export interface Applicant {
     instagram: _Null<string>;
     twitter: _Null<string>;
   };
-  aplImg_path:
-    | {
-        primePath: _Null<string[]>;
-        secPath: _Null<string[]>;
-        wardsPath: _Null<string[]>;
-      }[]
-    | null;
+  aplImg_path: {
+    primePath: _Null<string[]>;
+    secPath: _Null<string[]>;
+    wardsPath: _Null<string[]>;
+  };
 }
 
 export interface Dashboard {

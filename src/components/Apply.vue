@@ -10,7 +10,7 @@ import {
 } from 'vue';
 import WardForm from './wardForm.vue';
 import Dialog from 'primevue/dialog';
-import gradientButton from '../composables/gradientButton.vue';
+import gradientButton from '../components/gradientButton.vue';
 import { supabase } from '../supabase/supabase';
 import { useDashStore } from '../store/dashboardStore';
 import Avatar from './avatar.vue';
@@ -72,7 +72,11 @@ const apl = reactive<Applicant>({
     instagram: null,
     twitter: null,
   },
-  aplImg_path: [],
+  aplImg_path: {
+    primePath: [],
+    secPath: [],
+    wardsPath: [],
+  },
 });
 const toast = useToast();
 
@@ -94,52 +98,13 @@ function toggleEditMode() {
 }
 provide('editMode', { editMode, toggleEditMode });
 provide('disabled', disabled);
-// primary and secondary apl imgs and srcs
+
 const aplImg_path = ref([]);
 const primeIMG = ref(null);
 const primeSRC = ref(null);
 const secIMG = ref(null);
 const secSRC = ref(null);
 const discountAmount = ref(null);
-
-// const plastName = ref(null);
-// const pfirstName = ref(null);
-// const potherName = ref(null);
-// const pdob_day = ref(null);
-// const pdob_month = ref(null);
-// const pdob_year = ref(null);
-// const passport_number = ref(null);
-// const passport_ex_day = ref(null);
-// const passport_ex_month = ref(null);
-// const passport_ex_year = ref(null);
-// const conf_code = ref(null);
-// const pgender = ref(null);
-// const pcity_ob = ref(null);
-// const pcountry_ob = ref(null);
-// const email = ref(null);
-// const country_live_today = ref(null);
-// const education_level = ref(null);
-// const pcontact = ref(null);
-// const pother_contact = ref(null);
-// const postal = ref(null);
-// const marital_status = ref('unmarried');
-// const children_number = ref(0);
-// const wards = ref([]);
-
-// const slastName = ref(null);
-// const sfirstName = ref(null);
-// const sotherName = ref(null);
-// const sdob_day = ref(null);
-// const sdob_month = ref(null);
-// const sdob_year = ref(null);
-// const sgender = ref(null);
-// const scity_ob = ref(null);
-// const scountry_ob = ref(null);
-// const psocial_media = ref({
-//   instagram: null,
-//   facebook: null,
-//   twitter: null,
-// });
 
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
@@ -344,57 +309,59 @@ const applyApl = async () => {
   loading.value = true;
   try {
     if (hasFiles.value) {
-      aplImg_path.value = await useApplyImgStore().uploadFiles(apl_id);
+      apl.aplImg_path = await useApplyImgStore().uploadFiles(apl_id);
     }
 
     const { data, error } = await supabase.from('applicants').insert(
       [
         // TODO avatarsvg
-        {
-          created_at_date: new Date().toLocaleString().split(',')[0],
-          passportAvail: passportAvail.value,
-          aplImg_path: placeholderActive.value
-            ? 'avatar.svg'
-            : aplImg_path.value,
-          apl_id,
-          fullName: full.value,
-          plastName: plastName.value?.toUpperCase().trim(),
-          pfirstName: pfirstName.value?.toUpperCase().trim(),
-          potherName: potherName.value?.toUpperCase().trim(),
-          pdob_day: pdob_day.value,
-          pdob_month: pdob_month.value,
-          pdob_year: pdob_year.value,
-          ppassport_number: passport_number.value,
-          passport_ex_day: passport_ex_day.value,
-          passport_ex_month: passport_ex_month.value,
-          passport_ex_year: passport_ex_year.value,
-          pgender: pgender.value,
-          pcity_ob: pcity_ob.value,
-          pconf_code: conf_code.value,
-          pcountry_ob: pcountry_ob.value,
-          pemail: email.value,
-          pcountry_live_today: country_live_today.value,
-          peducation_level: education_level.value,
-          pcontact: pcontact.value,
-          pother_contact: pother_contact.value,
-          ppostal: postal.value,
-          pmarital_status: marital_status.value,
-          children_number: children_number.value,
-          wards: wards.value,
-          psocial_media: psocial_media.value,
+        // {
+        //   created_at_date: new Date().toLocaleString().split(',')[0],
+        //   passportAvail: passportAvail.value,
+        //   aplImg_path: placeholderActive.value
+        //     ? 'avatar.svg'
+        //     : aplImg_path.value,
+        //   apl_id,
+        //   fullName: full.value,
+        //   plastName: plastName.value?.toUpperCase().trim(),
+        //   pfirstName: pfirstName.value?.toUpperCase().trim(),
+        //   potherName: potherName.value?.toUpperCase().trim(),
+        //   pdob_day: pdob_day.value,
+        //   pdob_month: pdob_month.value,
+        //   pdob_year: pdob_year.value,
+        //   ppassport_number: passport_number.value,
+        //   passport_ex_day: passport_ex_day.value,
+        //   passport_ex_month: passport_ex_month.value,
+        //   passport_ex_year: passport_ex_year.value,
+        //   pgender: pgender.value,
+        //   pcity_ob: pcity_ob.value,
+        //   pconf_code: conf_code.value,
+        //   pcountry_ob: pcountry_ob.value,
+        //   pemail: email.value,
+        //   pcountry_live_today: country_live_today.value,
+        //   peducation_level: education_level.value,
+        //   pcontact: pcontact.value,
+        //   pother_contact: pother_contact.value,
+        //   ppostal: postal.value,
+        //   pmarital_status: marital_status.value,
+        //   children_number: children_number.value,
+        //   wards: wards.value,
+        //   psocial_media: psocial_media.value,
 
-          slastName: slastName.value,
-          sfirstName: sfirstName.value,
-          sotherName: sotherName.value,
-          sdob_day: sdob_day.value,
-          sdob_month: sdob_month.value,
-          sdob_year: sdob_year.value,
-          sgender: sgender.value,
-          scity_ob: scity_ob.value,
-          scountry_ob: scountry_ob.value,
-          totalPayment: totalPayment.value,
-          user_id,
-        },
+        //   slastName: slastName.value,
+        //   sfirstName: sfirstName.value,
+        //   sotherName: sotherName.value,
+        //   sdob_day: sdob_day.value,
+        //   sdob_month: sdob_month.value,
+        //   sdob_year: sdob_year.value,
+        //   sgender: sgender.value,
+        //   scity_ob: scity_ob.value,
+        //   scountry_ob: scountry_ob.value,
+        //   totalPayment: totalPayment.value,
+        //   user_id,
+        // },
+
+        apl,
       ],
       {
         upsert: true,
@@ -407,48 +374,48 @@ const applyApl = async () => {
     loading.value = false;
     setTimeout(() => {
       hasSaved.value = false;
-      apply.value.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      apply.value!.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, 1700);
 
     passportAvail.value = false;
-    plastName.value = null;
-    pfirstName.value = null;
-    potherName.value = null;
-    pdob_day.value = null;
-    pdob_month.value = null;
-    pdob_year.value = null;
-    passport_number.value = null;
-    passport_ex_day.value = null;
-    passport_ex_month.value = null;
-    passport_ex_year.value = null;
-    pgender.value = null;
-    pcity_ob.value = null;
-    conf_code.value = null;
-    pcountry_ob.value = null;
-    email.value = null;
-    country_live_today.value = null;
-    education_level.value = null;
-    pcontact.value = null;
-    pother_contact.value = null;
-    postal.value = null;
-    marital_status.value = null;
-    children_number.value = 0;
-    wards.value = [];
-    psocial_media.value = {
+    apl.plastName = null;
+    apl.pfirstName = null;
+    apl.potherName = null;
+    apl.pdob_day = null;
+    apl.pdob_month = null;
+    apl.pdob_year = null;
+    apl.ppassport_number = null;
+    apl.passport_ex_day = null;
+    apl.passport_ex_month = null;
+    apl.passport_ex_year = null;
+    apl.pgender = null;
+    apl.pcity_ob = null;
+    apl.pconf_code = null;
+    apl.pcountry_ob = null;
+    apl.pemail = null;
+    apl.pcountry_live_today = null;
+    apl.peducation_level = null;
+    apl.pcontact = null;
+    apl.pother_contact = null;
+    apl.ppostal = null;
+    apl.pmarital_status = 'unmarried';
+    apl.children_number = 0;
+    apl.wards = [];
+    apl.psocial_media = {
       facebook: null,
       twitter: null,
       instagram: null,
     };
 
-    slastName.value = null;
-    sfirstName.value = null;
-    sotherName.value = null;
-    sdob_day.value = null;
-    sdob_month.value = null;
-    sdob_year.value = null;
-    sgender.value = null;
-    scity_ob.value = null;
-    scountry_ob.value = null;
+    apl.slastName = null;
+    apl.sfirstName = null;
+    apl.sotherName = null;
+    apl.sdob_day = null;
+    apl.sdob_month = null;
+    apl.sdob_year = null;
+    apl.sgender = null;
+    apl.scity_ob = null;
+    apl.scountry_ob = null;
 
     primeIMG.value = null;
     primeSRC.value = null;
@@ -477,19 +444,19 @@ const showErrorApply = () => {
   });
 };
 
-const onSelectPrime = evt => {
+const onSelectPrime = (evt: any) => {
   ifSavedPrimeMsg.value = false;
   primeIMG.value = evt.files[0];
   primeSRC.value = evt.files[0].objectURL;
 };
 
-const onSelectSec = evt => {
+const onSelectSec = (evt: any) => {
   ifSavedSecMsg.value = false;
   secIMG.value = evt.files[0];
   secSRC.value = evt.files[0].objectURL;
 };
 
-const saveImgFiles = (e, type = null) => {
+const saveImgFiles = (e: any, type: string | null) => {
   useApplyImgStore().setFiles(e.files[0], type);
   toggleEditMode();
   if (type == 'prime') {
@@ -572,7 +539,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="ln">Last Name:</label>
               <input
                 required
-                v-model="plastName"
+                v-model="apl.plastName"
                 id="ln"
                 name="lastName"
                 type="text"
@@ -583,7 +550,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="fn">First Name:</label>
               <input
                 required
-                v-model="pfirstName"
+                v-model="apl.pfirstName"
                 id="fn"
                 type="text"
                 name="firstName"
@@ -594,7 +561,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="on">Other Name:</label>
               <input
                 required
-                v-model="potherName"
+                v-model="apl.potherName"
                 id="on"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -612,7 +579,7 @@ const saveImgFiles = (e, type = null) => {
             <section>
               <input
                 required
-                v-model="pdob_day"
+                v-model="apl.pdob_day"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1"
@@ -622,7 +589,7 @@ const saveImgFiles = (e, type = null) => {
               />
               <input
                 required
-                v-model="pdob_month"
+                v-model="apl.pdob_month"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1"
@@ -632,7 +599,7 @@ const saveImgFiles = (e, type = null) => {
               />
               <input
                 required
-                v-model="pdob_year"
+                v-model="apl.pdob_year"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1950"
@@ -649,7 +616,7 @@ const saveImgFiles = (e, type = null) => {
             <select
               required
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
-              v-model="pgender"
+              v-model="apl.pgender"
             >
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -664,7 +631,7 @@ const saveImgFiles = (e, type = null) => {
               id="cityb"
               type="text"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
-              v-model="pcity_ob"
+              v-model="apl.pcity_ob"
             />
           </div>
           <div
@@ -672,7 +639,7 @@ const saveImgFiles = (e, type = null) => {
           >
             <label for="em">Confirmation Code:</label>
             <input
-              v-model="conf_code"
+              v-model="apl.pconf_code"
               id="em"
               type="text"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -685,7 +652,7 @@ const saveImgFiles = (e, type = null) => {
             <label for="counb">Country of Birth:</label>
             <select
               required
-              v-model="pcountry_ob"
+              v-model="apl.pcountry_ob"
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
             >
               <Countries />
@@ -705,7 +672,7 @@ const saveImgFiles = (e, type = null) => {
             <label for="pn">Phone Number:</label>
             <input
               required
-              v-model="pcontact"
+              v-model="apl.pcontact"
               id="pn"
               type="text"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -718,7 +685,7 @@ const saveImgFiles = (e, type = null) => {
             <label for="pn">Next Of Kin Phone Number(s):</label>
             <input
               required
-              v-model="pother_contact"
+              v-model="apl.pother_contact"
               id="pn"
               type="text"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -730,7 +697,7 @@ const saveImgFiles = (e, type = null) => {
           >
             <label for="em">Email:</label>
             <input
-              v-model="email"
+              v-model="apl.pemail"
               id="em"
               type="email"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -754,7 +721,7 @@ const saveImgFiles = (e, type = null) => {
               <input
                 id="em"
                 type="text"
-                v-model="passport_number"
+                v-model="apl.ppassport_number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
               />
             </div>
@@ -766,7 +733,7 @@ const saveImgFiles = (e, type = null) => {
             <label>Passport Expiration Date:</label>
             <section>
               <input
-                v-model="passport_ex_day"
+                v-model="apl.passport_ex_day"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1"
@@ -775,7 +742,7 @@ const saveImgFiles = (e, type = null) => {
                 maxlength="2"
               />
               <input
-                v-model="passport_ex_month"
+                v-model="apl.passport_ex_month"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1"
@@ -784,7 +751,7 @@ const saveImgFiles = (e, type = null) => {
                 maxlength="2"
               />
               <input
-                v-model="passport_ex_year"
+                v-model="apl.passport_ex_year"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
                 min="1950"
@@ -804,7 +771,7 @@ const saveImgFiles = (e, type = null) => {
           >
             <label for="pa">Postal Address:</label>
             <input
-              v-model="postal"
+              v-model="apl.ppostal"
               id="pa"
               type="text"
               class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -823,7 +790,7 @@ const saveImgFiles = (e, type = null) => {
             /> -->
             <select
               required
-              v-model="country_live_today"
+              v-model="apl.pcountry_live_today"
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
             >
               <Countries />
@@ -837,7 +804,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="ln">Facebook:</label>
               <input
                 required
-                v-model="psocial_media.facebook"
+                v-model="apl.psocial_media.facebook"
                 id="ln"
                 name="facebook"
                 type="text"
@@ -848,7 +815,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="fn">Instagram:</label>
               <input
                 required
-                v-model="psocial_media.instagram"
+                v-model="apl.psocial_media.instagram"
                 id="fn"
                 type="text"
                 name="instagram"
@@ -859,7 +826,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="on">Twitter:</label>
               <input
                 required
-                v-model="psocial_media.twitter"
+                v-model="apl.psocial_media.twitter"
                 id="on"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -874,7 +841,7 @@ const saveImgFiles = (e, type = null) => {
             <p>Marital Status:</p>
             <select
               required
-              v-model="marital_status"
+              v-model="apl.pmarital_status"
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
             >
               <option value="unmarried">Unmarried</option>
@@ -891,7 +858,7 @@ const saveImgFiles = (e, type = null) => {
             <p>Highest Level of Education:</p>
             <select
               required
-              v-model="education_level"
+              v-model="apl.peducation_level"
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
             >
               <option value="primary school only">Primary School Only</option>
@@ -930,7 +897,7 @@ const saveImgFiles = (e, type = null) => {
             /> -->
             <select
               required
-              v-model="children_number"
+              v-model="apl.children_number"
               class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
             >
               <option selected value="0">0</option>
@@ -995,7 +962,7 @@ const saveImgFiles = (e, type = null) => {
               <div>
                 <label for="ln">Last Name:</label>
                 <input
-                  v-model="slastName"
+                  v-model="apl.slastName"
                   required
                   id="ln"
                   name="lastName"
@@ -1006,7 +973,7 @@ const saveImgFiles = (e, type = null) => {
               <div>
                 <label for="fn">First Name:</label>
                 <input
-                  v-model="sfirstName"
+                  v-model="apl.sfirstName"
                   required
                   id="fn"
                   type="text"
@@ -1017,7 +984,7 @@ const saveImgFiles = (e, type = null) => {
               <div>
                 <label for="on">Other Name:</label>
                 <input
-                  v-model="sotherName"
+                  v-model="apl.sotherName"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -1032,7 +999,7 @@ const saveImgFiles = (e, type = null) => {
 
               <section>
                 <input
-                  v-model="sdob_day"
+                  v-model="apl.sdob_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
                   max="31"
@@ -1042,7 +1009,7 @@ const saveImgFiles = (e, type = null) => {
                   placeholder="DD"
                 />
                 <input
-                  v-model="sdob_month"
+                  v-model="apl.sdob_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
                   min="1"
@@ -1052,7 +1019,7 @@ const saveImgFiles = (e, type = null) => {
                   placeholder="MM"
                 />
                 <input
-                  v-model="sdob_year"
+                  v-model="apl.sdob_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
                   min="1950"
@@ -1070,7 +1037,7 @@ const saveImgFiles = (e, type = null) => {
               <select
                 required
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
-                v-model="sgender"
+                v-model="apl.sgender"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -1084,7 +1051,7 @@ const saveImgFiles = (e, type = null) => {
                 id="cityb"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
-                v-model="scity_ob"
+                v-model="apl.scity_ob"
               />
             </div>
             <div
@@ -1093,7 +1060,7 @@ const saveImgFiles = (e, type = null) => {
               <label for="counb">Country of Birth:</label>
               <select
                 required
-                v-model="scountry_ob"
+                v-model="apl.scountry_ob"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
               >
                 <Countries />
@@ -1201,7 +1168,7 @@ const saveImgFiles = (e, type = null) => {
             label="Submit"
             icon="pi pi-check"
             class="h-10 p-button-rounded bg-purple-500"
-            @click="requestDiscount"
+            @click=""
           />
         </template>
       </Dialog>

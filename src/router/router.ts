@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 
 const routes: Array<RouteRecordRaw> = [
-  // {
-  //   path: '/contactUs',
-  //   name: 'ContactUs',
-  //   component: () => import('../components/ContactUs'),
-  // },
+  {
+    path: '/contactUs',
+    name: 'ContactUs',
+    component: () => import('../views/ContactUs.vue'),
+  },
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -21,27 +21,27 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Database',
     component: () => import('../views/Database.vue'),
   },
-  // {
-  //   path: '/profile',
-  //   name: 'ProfilePage',
-  //   component: () => import('../components/ProfilePage'),
-  // },
-  // {
-  //   path: '/aplDetails/:id',
-  //   name: 'AplDetails',
-  //   component: () => import('../components/AplDetails'),
-  //   props: true,
-  // },
-  // {
-  //   path: '/aplslist',
-  //   name: 'AplsList',
-  //   component: () => import('../components/AplsList'),
-  // },
-  // {
-  //   path: '/requests',
-  //   name: 'AdminRequests',
-  //   component: () => import('../components/AdminRequests'),
-  // },
+  {
+    path: '/profile',
+    name: 'ProfilePage',
+    component: () => import('../views/ProfilePage.vue'),
+  },
+  {
+    path: '/aplDetails/:id',
+    name: 'AplDetails',
+    component: () => import('../views/AplDetails.vue'),
+    props: true,
+  },
+  {
+    path: '/aplslist',
+    name: 'AplsList',
+    component: () => import('../views/AplsList.vue'),
+  },
+  {
+    path: '/requests',
+    name: 'AdminRequests',
+    component: () => import('../views/AdminRequests.vue'),
+  },
   // {
   //   path: '/userreport/:id',
   //   name: 'UserReport',

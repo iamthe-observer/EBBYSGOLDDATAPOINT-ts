@@ -1,5 +1,5 @@
-<script setup>
-import { ref, computed, watchEffect, onMounted } from 'vue';
+<script setup lang="ts">
+import { ref, computed, Ref, watchEffect, onMounted } from 'vue';
 import { useAnnStore } from '../store/annStore';
 import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
@@ -8,47 +8,51 @@ import Dialog from 'primevue/dialog';
 import ToggleButton from 'primevue/togglebutton';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
+import { Announcement } from '../interfaces/interfaces';
+import { _Null } from '../types/types';
+import { useDashStore } from '../store/dashboardStore';
 
 const toast = useToast();
 const annStore = useAnnStore();
 const { ann } = storeToRefs(annStore);
-const { inputLoading } = storeToRefs(annStore);
 const { loading } = storeToRefs(annStore);
 const refreshAnn = ref(0);
 const viewAnn = ref(false);
-const currentAnn = ref(null);
-const viewInputAnn = ref(false);
-const subjbody = ref(false);
-const urgency = ref(false);
+const currentAnn: Ref<_Null<Announcement>> = ref(null);
+const urgency = ref<boolean>(false);
+const subjbody = ref<boolean>(false);
 
+const todayAnnArr = computed<Announcement[]>(() => {
+  return ann.value!.filter(
+    y =>
+      useDashStore().fd(new Date(y.created_at)) ===
+      useDashStore().fd(new Date())
+  );
+});
 onMounted(() => {
   annStore.getAnn();
 });
 
-const annArr = ref({
-  allAnnArr: ann.value.all,
-  todayAnnArr: ann.value.today,
-});
-let currentAnnArr = ref('todayAnnArr');
+let currentAnnArr = ref<Announcement[] | null>(todayAnnArr.value);
 
-const announArr = computed(() => {
-  return annArr.value[currentAnnArr.value];
-});
+// let getAnnounArr = computed(() => {
+//   return announ[currentAnnArr.value];
+// });
 
 const isAnn = computed(() => {
-  if (announArr.value.length == 0) return false;
+  if (currentAnnArr.value!.length == 0) return false;
   return true;
 });
 
-const toggleEvt = evt => {
-  if (evt == 'All') {
-    currentAnnArr.value = 'allAnnArr';
+const toggleEvt = (evt: boolean) => {
+  if (!evt) {
+    currentAnnArr.value = todayAnnArr.value;
   } else {
-    currentAnnArr.value = 'todayAnnArr';
+    currentAnnArr.value = ann.value;
   }
 };
 
-const changeDate = date => {
+const changeDate = (date: Date) => {
   const day = new Date(date).toLocaleDateString('en-us', {
     weekday: 'long',
     year: 'numeric',
@@ -59,22 +63,13 @@ const changeDate = date => {
   return day;
 };
 
-watchEffect(() => {
-  if (ann) {
-    annArr.value = {
-      allAnnArr: ann.value.all,
-      todayAnnArr: ann.value.today,
-    };
-  }
-});
-
 const refresh = () => {
   annStore.resetAnn();
   annStore.getAnn();
   refreshAnn.value++;
 };
 
-const annStatus_class = urg => {
+const annStatus_class = (urg: 'high' | 'low') => {
   if (urg == 'high') {
     return `text-xs w-[85px] text-center text-purple-600 bg-purple-200 px-2 py-1 rounded-full group-hover:outline group-hover:outline-2 group-hover:outline-purple-600`;
   } else {
@@ -82,7 +77,7 @@ const annStatus_class = urg => {
   }
 };
 
-const handleOpenAnn = ann => {
+const handleOpenAnn = (ann: Announcement) => {
   viewAnn.value = true;
   currentAnn.value = ann;
 };
@@ -104,23 +99,29 @@ const showInputAnnError = () => {
   });
 };
 
-const subject = ref(null);
-const body = ref(null);
+const subject = ref<_Null<string>>(null);
+const body = ref<string | number | string[] | undefined>(undefined);
+const inputLoading = ref<boolean>();
 
-function inputAnn() {
+async function inputAnn() {
+  inputLoading.value = true;
   if (subject.value) {
-    let input = useAnnStore().inputAnn({
-      subject: subject.value,
-      body: body.value,
-      urgency: urgency.value ? 'high' : 'low',
-    });
+    await useAnnStore().inputAnn([
+      {
+        subject: subject.value,
+        body: body.value,
+        urgency: urgency.value ? 'high' : 'low',
+      },
+    ]);
+    inputLoading.value = false;
     subjbody.value = false;
     subject.value = '';
     body.value = '';
-    if (input) showInputAnnSuccess();
+    showInputAnnSuccess();
   } else {
     showInputAnnError();
     subjbody.value = false;
+    inputLoading.value = false;
   }
   return;
 }
@@ -134,7 +135,7 @@ function inputAnn() {
     <div class="flex justify-between">
       <h2 class="text-xl font-extrabold">Announcements</h2>
       <div class="min-w-[200px] min-h-[30px] flex gap-3 items-center">
-        <Toggle @toggleVal="toggleEvt" />
+        <Toggle @update="toggleEvt" />
         <i
           class="pi pi-refresh font-bold text-lg mr-2 cursor-pointer"
           @click="refresh"
@@ -157,12 +158,16 @@ function inputAnn() {
       class="flex flex-col overflow-y-scroll max-h-[200px] bg-gray-100 rounded-xl"
       :key="refreshAnn"
     >
-      <div v-for="(ann, i) in announArr" :key="i" @click="handleOpenAnn(ann)">
+      <div
+        v-for="(ann, i) in currentAnnArr"
+        :key="i"
+        @click="handleOpenAnn(ann)"
+      >
         <div
           class="flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 rounded-xl py-3 group"
         >
           <div class="w-full justify-center">
-            <div :class="annStatus_class(ann.urgency)">
+            <div :class="annStatus_class(ann.urgency ? 'high' : 'low')">
               {{ ann.urgency }}
             </div>
           </div>
@@ -252,10 +257,10 @@ function inputAnn() {
             class="font-bold flex flex-col max-w-[70%] p-3 rounded-md bg-purple-50 w-full h-[300px]"
           >
             <h3 class="text-center font-bold text-[2em] uppercase">
-              {{ currentAnn.subject }}
+              {{ currentAnn!.subject }}
             </h3>
             <div class="p-3 flex-1 w-full h-max bg-white rounded-md uppercase">
-              {{ currentAnn.body }}
+              {{ currentAnn?.body }}
             </div>
           </div>
         </div>

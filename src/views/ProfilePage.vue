@@ -2,7 +2,7 @@
 import { ref, reactive, onMounted, computed, Ref } from 'vue';
 import { useProfileStore } from '../store/profileStore';
 import { storeToRefs } from 'pinia';
-import gradientButton from '../composables/gradientButton.vue';
+import gradientButton from '../components/gradientButton.vue';
 import { supabase } from '../supabase/supabase';
 import FileUpload from 'primevue/fileupload';
 import Avatar from '../components/avatar.vue';
@@ -60,8 +60,8 @@ const adminProfileName = computed(() => {
 
 // TODO policies for updating and deleting avatars..JUST LEARN POLICIES AND SQL QUERIES
 
-const DefaultProfile: DefaultProfile = {
-  // id: supabase.auth.user()!.id,
+// id: supabase.auth.user()!.id,
+const defaultProfile: DefaultProfile = {
   full_name: 'User',
   username: 'user',
   email: supabase.auth.user()!.email,
@@ -73,7 +73,7 @@ onMounted(async () => {
   try {
     let ifProfile = await profileStore.checkForProfile();
     if (ifProfile!.length !== 0) return;
-    await profileStore.insertDefaultProfile([DefaultProfile]);
+    await profileStore.insertDefaultProfile([defaultProfile]);
   } catch (error) {
     console.log(error);
   }
