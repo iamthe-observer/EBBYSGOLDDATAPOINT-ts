@@ -3,4 +3,4 @@ export type emitLogin = {
   adminLoggedIn: string;
 };
 
-export type _Null<T> = T | null;
+export type _Null<Type> = Type | null;

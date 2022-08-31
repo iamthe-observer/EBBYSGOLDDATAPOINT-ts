@@ -1,17 +1,31 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue';
 import ToggleButton from 'primevue/togglebutton';
 import Avatar from './avatar.vue';
 import FileUpload from 'primevue/fileupload';
-// import ImageView from '../components/imgView.vue';
 import { useApplyImgStore } from '../store/aplImgStore';
 import InlineMessage from 'primevue/inlinemessage';
 import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
+import { computed } from '@vue/reactivity';
+import { WardsApplicant } from '../interfaces/interfaces';
+import { _Null } from '../types/types';
 
 const toast = useToast();
-const props = defineProps(['index', 'ward', 'wardsPath', 'editMode']);
+const props = defineProps<{
+  index: number;
+  wardsPath: any;
+  ward: WardsApplicant;
+  apl_id: _Null<string> | undefined | null;
+  aplImg_path:
+    | {
+        primePath: string[] | null;
+        secPath: string[] | null;
+        wardsPath: string[] | null;
+      }
+    | undefined;
+}>();
 const emit = defineEmits(['wardData', 'wardStateOff']);
 const wardData = ref({
   wlastName: props.ward.wlastName?.toUpperCase(),
@@ -28,7 +42,34 @@ const wardData = ref({
 const isSaved = ref(false);
 const checked = ref(false);
 const wardIMG = ref(null);
-const wardSRC = ref(null);
+const wardSRC = ref<string | null>(null);
+
+const WARDPATH: string | undefined = props.wardsPath.filter(
+  (wardPath: string): boolean => wardPath.includes(`ward${props.index}`)
+)[0];
+const hasWardPath = computed(() => {
+  if (WARDPATH) {
+    return true;
+  } else {
+    return false;
+  }
+});
+
+console.log(WARDPATH);
+
+const wardImage = computed((): string | null => {
+  if (wardIMG.value) {
+    return wardSRC.value;
+  } else {
+    if (props.wardsPath.length && hasWardPath.value) {
+      // TODO fix ward pic
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${WARDPATH}`;
+    } else {
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
+    }
+  }
+});
+
 const editMode = ref(false);
 const disabled = ref(false);
 const ifSavedWardMsg = ref(false);
@@ -44,18 +85,23 @@ const wardSave = () => {
   }
 };
 
-const onSelect = evt => {
+const onSelect = (evt: any) => {
   wardIMG.value = evt.files[0];
   wardSRC.value = evt.files[0].objectURL;
 };
 
-const saveImgFiles = (e, type = null) => {
+const saveImgFiles = (e: any, type: string) => {
   useApplyImgStore().setFiles(e.files[0], type);
   toggleEditMode();
   ifSavedWardMsg.value = true;
 };
 
-const showToast = (severity, summary, detail, life = 4000) => {
+const showToast = (
+  severity: string,
+  summary: string,
+  detail: string,
+  life: number = 4000
+) => {
   toast.add({
     severity: severity,
     summary: summary,
@@ -64,17 +110,44 @@ const showToast = (severity, summary, detail, life = 4000) => {
   });
 };
 
-async function handleAplImgUpdate(path) {
+async function handleAplImgUpdate(
+  id: string | null | undefined,
+  path: string | undefined,
+  hasPath: boolean,
+  type: string,
+  file: any
+) {
   imageUpdateLoading.value = true;
-  await useApplyImgStore().updateSingleAplImg(path);
-  imageUpdateLoading.value = false;
+  if (!hasPath) {
+    const newPath = await useApplyImgStore().uploadAplImg(id, file);
+    console.log(newPath);
+    await useApplyImgStore().updateAplPath(
+      props.aplImg_path,
+      newPath,
+      props.apl_id,
+      type
+    );
+  } else {
+    await useApplyImgStore().updateSingleAplImg(path);
+  }
   ifSavedWardMsg.value = false;
-  showToast('success', 'Ward Applicant Image Updated', '');
-  useApplyImgStore().resetFiles();
+  imageUpdateLoading.value = false;
 
-  // await useApplyImgStore().updateAplImg(primePath.value, id.value);
-  // await useApplyImgStore().updateFile(primePath.value);
+  showToast('success', `Ward Applicant Image Updated`, '');
+  useApplyImgStore().resetFiles();
 }
+
+// async function handleAplImgUpdate(path: string) {
+//   imageUpdateLoading.value = true;
+//   await useApplyImgStore().updateSingleAplImg(path);
+//   imageUpdateLoading.value = false;
+// ifSavedWardMsg.value = false;
+//   showToast('success', 'Ward Applicant Image Updated', '');
+//   useApplyImgStore().resetFiles();
+
+// await useApplyImgStore().updateAplImg(primePath.value, id.value);
+// await useApplyImgStore().updateingle(primePath.value);
+// }
 </script>
 
 <template>
@@ -95,11 +168,8 @@ async function handleAplImgUpdate(path) {
         <Avatar
           class="my-3 mb-0"
           :editMode="editMode"
-          :url="
-            wardSRC
-              ? wardSRC
-              : `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${wardsPath[index]}`
-          "
+          :url="wardImage"
+          :uploading="false"
           @edit="toggleEditMode"
         >
           <template #uploadFile>
@@ -118,7 +188,15 @@ async function handleAplImgUpdate(path) {
                 class="p-button bg-indigo-500 self-center"
                 icon="pi
                         pi-upload"
-                @click="handleAplImgUpdate(wardsPath[index])"
+                @click="
+                  handleAplImgUpdate(
+                    apl_id,
+                    WARDPATH,
+                    hasWardPath,
+                    `ward${index}`,
+                    wardIMG
+                  )
+                "
                 label="Update Image"
                 :loading="imageUpdateLoading"
               />

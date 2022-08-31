@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   ref,
+  ComputedRef,
   provide,
   computed,
   watchEffect,
@@ -26,9 +27,25 @@ import Button from 'primevue/button';
 import Countries from './countries.vue';
 import { Applicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
+import { StringIterator } from 'lodash';
+
+const PRICE_PER_APL: number = 20;
+const PRICE_PER_WARD: number = 20;
+
+const totalPayment: ComputedRef<number> = computed(() => {
+  if (!hasSpouse.value && !hasWard.value) {
+    return PRICE_PER_APL;
+  } else if (hasSpouse.value && !hasWard.value) {
+    return PRICE_PER_APL * 2;
+  } else if (!hasSpouse.value && hasWard.value) {
+    return PRICE_PER_APL + PRICE_PER_WARD * apl.children_number;
+  } else {
+    return PRICE_PER_APL * 2 + PRICE_PER_WARD * apl.children_number;
+  }
+});
 
 const apl = reactive<Applicant>({
-  created_at: new Date(),
+  created_at: new Date().toLocaleString().split(',')[0],
   apl_id: null,
   plastName: null,
   pfirstName: null,
@@ -78,13 +95,27 @@ const apl = reactive<Applicant>({
     wardsPath: [],
   },
 });
+
 const toast = useToast();
+const full = computed((): string | null => {
+  if (!apl.plastName || !apl.pfirstName) {
+    return null;
+  } else {
+    return `${apl.plastName.toUpperCase().trim()} ${apl.pfirstName
+      .toUpperCase()
+      .trim()}${
+      apl.potherName ? ' ' + apl.potherName.toUpperCase().trim() : ''
+    }`;
+  }
+});
+
+// FIXME fullname and totalPayment is messed up... figure out computed properties
 
 onMounted(() => {
   useApplyImgStore().resetFiles();
 });
 
-const user_id = supabase.auth.user()!.id;
+// const user_id = supabase.auth.user()!.id;
 const apply: Ref<HTMLDivElement | null> = ref(null);
 const loading = ref(false);
 const imgUploading = ref(false);
@@ -99,7 +130,7 @@ function toggleEditMode() {
 provide('editMode', { editMode, toggleEditMode });
 provide('disabled', disabled);
 
-const aplImg_path = ref([]);
+// const aplImg_path = ref([]);
 const primeIMG = ref(null);
 const primeSRC = ref(null);
 const secIMG = ref(null);
@@ -108,7 +139,6 @@ const discountAmount = ref(null);
 
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
-const passportAvail = ref(false);
 const discounted = ref(false);
 const hasSaved = ref(false);
 const isRender = ref(false);
@@ -116,21 +146,6 @@ const readySend = ref(false);
 
 const wardNumberArr: any = ref([]);
 const isSavedWardArr: any = ref([]);
-
-const PRICE_PER_APL = 20;
-const PRICE_PER_WARD = 20;
-
-const totalPayment = computed(() => {
-  if (!hasSpouse.value && !hasWard.value) {
-    return PRICE_PER_APL;
-  } else if (hasSpouse.value && !hasWard.value) {
-    return PRICE_PER_APL * 2;
-  } else if (!hasSpouse.value && hasWard.value) {
-    return PRICE_PER_APL + PRICE_PER_WARD * apl.children_number;
-  } else {
-    return PRICE_PER_APL * 2 + PRICE_PER_WARD * apl.children_number;
-  }
-});
 
 const hasWard = computed(() => {
   if (apl.children_number > 0) {
@@ -218,18 +233,6 @@ watchEffect(() => {
   }
 });
 
-const full = computed(() => {
-  if (!apl.plastName || !apl.pfirstName) {
-    return null;
-  } else {
-    return `${apl.plastName.toUpperCase().trim()} ${apl.pfirstName
-      .toUpperCase()
-      .trim()}${
-      apl.potherName ? ' ' + apl.potherName.toUpperCase().trim() : ''
-    }`;
-  }
-});
-
 const renderApl = () => {
   disabled.value = true;
   secDisabled.value = true;
@@ -237,6 +240,7 @@ const renderApl = () => {
   editMode.value = false;
   showPrice.value = true;
   apply.value!.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  console.log(apl);
 
   isRender.value = !isRender.value;
   readySend.value = !readySend.value;
@@ -304,6 +308,8 @@ const handleUsePlaceholder = () => {
   apl.aplImg_path!.primePath = ['avatar.svg'];
 };
 
+// TODO use vulidate to validate apply form
+
 const applyApl = async () => {
   let apl_id = uuidv4();
   loading.value = true;
@@ -311,64 +317,60 @@ const applyApl = async () => {
     if (hasFiles.value) {
       apl.aplImg_path = await useApplyImgStore().uploadFiles(apl_id);
     }
+    // const { data, error } = await supabase.from('applicants').upsert([apl]);
+    const { data, error } = await supabase
+      .from<Applicant>('applicants')
+      .upsert([
+        {
+          created_at_date: new Date().toLocaleString().split(',')[0],
+          passportAvail: apl.passportAvail,
+          aplImg_path: placeholderActive.value
+            ? { primePath: ['avatar.svg'], secPath: [], wardsPath: [] }
+            : apl.aplImg_path,
+          apl_id,
+          fullName: full.value,
+          plastName: apl.plastName?.toUpperCase().trim(),
+          pfirstName: apl.pfirstName?.toUpperCase().trim(),
+          potherName: apl.potherName?.toUpperCase().trim(),
+          pdob_day: apl.pdob_day,
+          pdob_month: apl.pdob_month,
+          pdob_year: apl.pdob_year,
+          ppassport_number: apl.ppassport_number,
+          passport_ex_day: apl.passport_ex_day,
+          passport_ex_month: apl.passport_ex_month,
+          passport_ex_year: apl.passport_ex_year,
+          pgender: apl.pgender,
+          pcity_ob: apl.pcity_ob,
+          pconf_code: apl.pconf_code,
+          pcountry_ob: apl.pcountry_ob,
+          pemail: apl.pemail,
+          pcountry_live_today: apl.pcountry_live_today,
+          peducation_level: apl.peducation_level,
+          pcontact: apl.pcontact,
+          pother_contact: apl.pother_contact,
+          ppostal: apl.ppostal,
+          pmarital_status: apl.pmarital_status,
+          children_number: apl.children_number,
+          wards: apl.wards,
+          psocial_media: apl.psocial_media,
 
-    const { data, error } = await supabase.from('applicants').insert(
-      [
-        // TODO avatarsvg
-        // {
-        //   created_at_date: new Date().toLocaleString().split(',')[0],
-        //   passportAvail: passportAvail.value,
-        //   aplImg_path: placeholderActive.value
-        //     ? 'avatar.svg'
-        //     : aplImg_path.value,
-        //   apl_id,
-        //   fullName: full.value,
-        //   plastName: plastName.value?.toUpperCase().trim(),
-        //   pfirstName: pfirstName.value?.toUpperCase().trim(),
-        //   potherName: potherName.value?.toUpperCase().trim(),
-        //   pdob_day: pdob_day.value,
-        //   pdob_month: pdob_month.value,
-        //   pdob_year: pdob_year.value,
-        //   ppassport_number: passport_number.value,
-        //   passport_ex_day: passport_ex_day.value,
-        //   passport_ex_month: passport_ex_month.value,
-        //   passport_ex_year: passport_ex_year.value,
-        //   pgender: pgender.value,
-        //   pcity_ob: pcity_ob.value,
-        //   pconf_code: conf_code.value,
-        //   pcountry_ob: pcountry_ob.value,
-        //   pemail: email.value,
-        //   pcountry_live_today: country_live_today.value,
-        //   peducation_level: education_level.value,
-        //   pcontact: pcontact.value,
-        //   pother_contact: pother_contact.value,
-        //   ppostal: postal.value,
-        //   pmarital_status: marital_status.value,
-        //   children_number: children_number.value,
-        //   wards: wards.value,
-        //   psocial_media: psocial_media.value,
-
-        //   slastName: slastName.value,
-        //   sfirstName: sfirstName.value,
-        //   sotherName: sotherName.value,
-        //   sdob_day: sdob_day.value,
-        //   sdob_month: sdob_month.value,
-        //   sdob_year: sdob_year.value,
-        //   sgender: sgender.value,
-        //   scity_ob: scity_ob.value,
-        //   scountry_ob: scountry_ob.value,
-        //   totalPayment: totalPayment.value,
-        //   user_id,
-        // },
-
-        apl,
-      ],
-      {
-        upsert: true,
-      }
-    );
+          slastName: apl.slastName,
+          sfirstName: apl.sfirstName,
+          sotherName: apl.sotherName,
+          sdob_day: apl.sdob_day,
+          sdob_month: apl.sdob_month,
+          sdob_year: apl.sdob_year,
+          sgender: apl.sgender,
+          scity_ob: apl.scity_ob,
+          scountry_ob: apl.scountry_ob,
+          totalPayment: totalPayment.value,
+          user_id: supabase.auth.user()!.id,
+        },
+      ]);
 
     if (!data) throw error;
+    console.log(apl);
+
     hasSaved.value = true;
     useDashStore().getApls();
     loading.value = false;
@@ -377,7 +379,7 @@ const applyApl = async () => {
       apply.value!.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, 1700);
 
-    passportAvail.value = false;
+    apl.passportAvail = false;
     apl.plastName = null;
     apl.pfirstName = null;
     apl.potherName = null;
@@ -416,6 +418,7 @@ const applyApl = async () => {
     apl.sgender = null;
     apl.scity_ob = null;
     apl.scountry_ob = null;
+    apl.fullName = null;
 
     primeIMG.value = null;
     primeSRC.value = null;
@@ -456,7 +459,7 @@ const onSelectSec = (evt: any) => {
   secSRC.value = evt.files[0].objectURL;
 };
 
-const saveImgFiles = (e: any, type: string | null) => {
+const saveImgFiles = (e: any, type: string) => {
   useApplyImgStore().setFiles(e.files[0], type);
   toggleEditMode();
   if (type == 'prime') {
@@ -543,7 +546,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="ln"
                 name="lastName"
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               />
             </div>
             <div>
@@ -554,7 +557,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="fn"
                 type="text"
                 name="firstName"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               />
             </div>
             <div>
@@ -564,7 +567,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 v-model="apl.potherName"
                 id="on"
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                 name="otherName"
               />
             </div>
@@ -574,14 +577,14 @@ const saveImgFiles = (e: any, type: string | null) => {
             class="bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg p-[10px] m-[10px] border-none rounded-2xl flex flex-col justify-center gap-2 text-center aC aCdob"
           >
             <label>Date of Birth:</label>
-            <!-- <input type="date" v-model="pdob" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase" /> -->
+            <!-- <input type="date" v-model="pdob" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input" /> -->
 
             <section>
               <input
                 required
                 v-model="apl.pdob_day"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1"
                 max="31"
                 placeholder="DD"
@@ -591,7 +594,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 required
                 v-model="apl.pdob_month"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1"
                 max="12"
                 placeholder="MM"
@@ -601,7 +604,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 required
                 v-model="apl.pdob_year"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1950"
                 max="2004"
                 placeholder="YY"
@@ -630,7 +633,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               required
               id="cityb"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               v-model="apl.pcity_ob"
             />
           </div>
@@ -642,7 +645,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="apl.pconf_code"
               id="em"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             />
           </div>
 
@@ -662,7 +665,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               id="counb"
               v-model="pcountry_ob"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             /> -->
           </div>
 
@@ -675,7 +678,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="apl.pcontact"
               id="pn"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             />
           </div>
 
@@ -688,7 +691,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="apl.pother_contact"
               id="pn"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             />
           </div>
 
@@ -700,7 +703,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="apl.pemail"
               id="em"
               type="email"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             />
           </div>
 
@@ -711,7 +714,7 @@ const saveImgFiles = (e: any, type: string | null) => {
 
             <div class="flex w-full gap-[20px] items-center justify-evenly">
               <ToggleButton
-                v-model="passportAvail"
+                v-model="apl.passportAvail"
                 onIcon="pi pi-check"
                 offIcon="pi pi-times"
                 class="h-8 font-Outfit rounded-xl"
@@ -722,7 +725,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="em"
                 type="text"
                 v-model="apl.ppassport_number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               />
             </div>
           </div>
@@ -735,7 +738,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               <input
                 v-model="apl.passport_ex_day"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1"
                 max="31"
                 placeholder="DD"
@@ -744,7 +747,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               <input
                 v-model="apl.passport_ex_month"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1"
                 max="12"
                 placeholder="MM"
@@ -753,7 +756,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               <input
                 v-model="apl.passport_ex_year"
                 type="number"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center"
                 min="1950"
                 max="2050"
                 placeholder="YY"
@@ -774,7 +777,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="apl.ppostal"
               id="pa"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             />
           </div>
           <div
@@ -786,7 +789,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="country_live_today"
               id="cwylt"
               type="text"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
             /> -->
             <select
               required
@@ -808,7 +811,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="ln"
                 name="facebook"
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               />
             </div>
             <div class="flex flex-col w-full items-center">
@@ -819,7 +822,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="fn"
                 type="text"
                 name="instagram"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               />
             </div>
             <div class="flex flex-col w-full items-center">
@@ -829,7 +832,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 v-model="apl.psocial_media.twitter"
                 id="on"
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                 name="twitter"
               />
             </div>
@@ -890,7 +893,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               v-model="children_number"
               id="number-of-children"
               type="number"
-              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+              class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               maxlength="2"
               min="0"
               max="10"
@@ -967,7 +970,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                   id="ln"
                   name="lastName"
                   type="text"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                 />
               </div>
               <div>
@@ -978,7 +981,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                   id="fn"
                   type="text"
                   name="firstName"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                 />
               </div>
               <div>
@@ -987,7 +990,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                   v-model="apl.sotherName"
                   id="on"
                   type="text"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                   name="otherName"
                 />
               </div>
@@ -1001,7 +1004,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 <input
                   v-model="apl.sdob_day"
                   type="number"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center tooltip tooltip-bottom"
                   max="31"
                   min="1"
                   data-tip="day"
@@ -1011,7 +1014,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 <input
                   v-model="apl.sdob_month"
                   type="number"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center tooltip tooltip-bottom"
                   min="1"
                   max="12"
                   data-tip="month"
@@ -1021,7 +1024,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 <input
                   v-model="apl.sdob_year"
                   type="number"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase placeholder:text-center tooltip tooltip-bottom"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input placeholder:text-center tooltip tooltip-bottom"
                   min="1950"
                   max="2004"
                   data-tip="year"
@@ -1050,7 +1053,7 @@ const saveImgFiles = (e: any, type: string | null) => {
               <input
                 id="cityb"
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
                 v-model="apl.scity_ob"
               />
             </div>
@@ -1070,7 +1073,7 @@ const saveImgFiles = (e: any, type: string | null) => {
                 id="counb"
                 v-model=""
                 type="text"
-                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
+                class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input"
               /> -->
             </div>
           </div>
@@ -1153,7 +1156,7 @@ const saveImgFiles = (e: any, type: string | null) => {
           <input
             type="number"
             v-model="discountAmount"
-            class="max-w-[100px] bg-white rounded-xl outline outline-2 outline-gray-600 uppercase text-center py-2 px-3 font-bold text-2xl"
+            class="max-w-[100px] bg-white rounded-xl outline outline-2 outline-gray-600 text-center py-2 px-3 font-bold text-2xl"
           />
           <span class="text-2xl font-bold">.00</span>
         </div>

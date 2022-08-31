@@ -12,8 +12,21 @@ export interface Announcement {
   urgency: string;
 }
 
+export interface WardsApplicant {
+  wlastName: _Null<string>;
+  wfirstName: _Null<string>;
+  wotherName: _Null<string>;
+  wdob_day: _Null<number>;
+  wdob_month: _Null<number>;
+  wdob_year: _Null<number>;
+  wgender: _Null<string>;
+  wcity_ob: _Null<string>;
+  wcountry_ob: _Null<string>;
+  index: number;
+}
+
 export interface Applicant {
-  created_at: Date;
+  created_at: string;
   apl_id: _Null<string>;
   plastName: _Null<string>;
   pfirstName: _Null<string>;
@@ -47,18 +60,7 @@ export interface Applicant {
   sdob_day: _Null<number>;
   sdob_month: _Null<number>;
   sdob_year: _Null<number>;
-  wards: {
-    wlastName: _Null<string>;
-    wfirstName: _Null<string>;
-    wotherName: _Null<string>;
-    wdob_day: _Null<number>;
-    wdob_month: _Null<number>;
-    wdob_year: _Null<number>;
-    wgender: _Null<string>;
-    wcity_ob: _Null<string>;
-    wcountry_ob: _Null<string>;
-    index: number;
-  }[];
+  wards: WardsApplicant[];
   totalPayment: number;
   passportAvail: boolean;
   created_at_date: string;
@@ -99,7 +101,7 @@ export interface UserSignIn {
 export interface ProfileData {
   id: string;
   updated_at: Date;
-  username: string;
+  username: string | null;
   full_name: string;
   settings: _Null<object>;
   email: string;

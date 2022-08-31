@@ -6,15 +6,31 @@ import { useSearchStore } from './store/searchStore';
 import { useDashStore } from './store/dashboardStore';
 import { useProfileStore } from './store/profileStore';
 import { useAnnStore } from './store/annStore';
-import { useRouteStore } from './store/routerStore';
 import { useAuthStore } from './store/AuthStore';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { supabase } from './supabase/supabase';
+import { useToast } from 'primevue/usetoast';
+import Toast from 'primevue/toast';
 
 type emitLogin = {
   val: boolean;
   adminLoggedIn: string;
+};
+
+const toast = useToast();
+const ShowToast = (
+  severity: string,
+  summary: string,
+  detail: string,
+  life = 4000
+) => {
+  toast.add({
+    severity: severity,
+    summary: summary,
+    detail: detail,
+    life: life,
+  });
 };
 
 const profileStore = useProfileStore();
@@ -44,9 +60,20 @@ function handleLogIn(ev: emitLogin) {
   dailySignIn();
   logged.value = ev.val;
 }
-function handleLogout(ev: boolean) {
-  useAuthStore().logout();
-  logged.value = ev;
+
+async function handleLogout(ev: boolean) {
+  try {
+    const { error } = await useAuthStore().logout();
+    if (error) throw error;
+    logged.value = ev;
+  } catch (error: any) {
+    ShowToast(
+      'error',
+      'There was a problem along the line...',
+      `${error.message}`,
+      6000
+    );
+  }
 }
 
 // async function logout(ev: boolean) {
@@ -83,7 +110,7 @@ onBeforeMount(() => {
     router.push({ name: 'Authenticate' });
   }
 
-    dailySignIn();
+  dailySignIn();
 });
 
 const checkDailySignIn = async () => {
@@ -132,6 +159,7 @@ const dailySignIn = async () => {
     v-if="logged"
     class="font-Outfit font-[500] antialiased w-full bg-gradient-to-br from-indigo-500 to-purple-500 h-screen flex p-2"
   >
+    <Toast />
     <Navigation
       @logout="handleLogout"
       :username="username"

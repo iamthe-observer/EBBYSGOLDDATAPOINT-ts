@@ -2,8 +2,7 @@ import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { Ref, ref } from 'vue';
 import * as interfaces from '../interfaces/interfaces';
-import * as supaClient from '../composables/supaClient';
-import { supabase } from '../supabase/supabase';
+ import { supabase } from '../supabase/supabase';
 import { _Null } from '../types/types';
 
 export const useAnnStore = defineStore('announcements', () => {

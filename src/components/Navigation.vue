@@ -9,7 +9,7 @@ import { useDashStore } from '../store/dashboardStore';
 const { uploading } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
 interface Props {
-  username: string;
+  username: string | null;
   avatar_url: _Null<string>;
   isNotFound: boolean;
 }

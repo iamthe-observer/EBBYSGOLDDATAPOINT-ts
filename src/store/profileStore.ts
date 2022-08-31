@@ -4,7 +4,6 @@ import { ref, Ref, computed } from 'vue';
 import { useStorage } from '@vueuse/core';
 import { v4 as uuidv4 } from 'uuid';
 import { DefaultProfile, ProfileData } from '../interfaces/interfaces';
-import * as SupaClient from '../composables/supaClient';
 import { _Null } from '../types/types';
 
 export const useProfileStore = defineStore('profile', () => {
@@ -85,44 +84,29 @@ export const useProfileStore = defineStore('profile', () => {
   };
 
   const updateProfile = async (val: object) => {
-    const data = await SupaClient.updateData(
-      'profiles',
-      val,
-      'id',
-      supabase.auth.user()!.id
-    );
-    if (data) return data;
-    // try {
-    //   const { data, error } = await supabase
-    //     .from('profiles')
-    //     .update(val)
-    //     .eq('id', supabase.auth.user()!.id);
-    //   if (error) throw error;
-    //   return data;
-    // } catch (err: any) {
-    //   console.trace(err.message);
-    // }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(val)
+        .eq('id', supabase.auth.user()!.id);
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      console.trace(err.message);
+    }
   };
 
   const checkForProfile = async () => {
-    const data = await SupaClient.getData(
-      'profiles',
-      '*',
-      'id',
-      supabase.auth.user()!.id
-    );
-    if (data) return data;
-
-    // try {
-    //   const { data, error } = await supabase
-    //     .from('profiles')
-    //     .select('*')
-    //     .eq('id', supabase.auth.user()!.id);
-    //   if (error) throw error;
-    //   return data;
-    // } catch (err: any) {
-    //   console.log(err.message);
-    // }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabase.auth.user()!.id);
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      console.log(err.message);
+    }
   };
 
   // const DefaultProfile: DefaultProfile = {
@@ -133,15 +117,13 @@ export const useProfileStore = defineStore('profile', () => {
   //   role: true,
   // };
   const insertDefaultProfile = async (val: DefaultProfile[]) => {
-    const data = await SupaClient.insertData('profiles', val);
-    if (data) return data;
-    // try {
-    //   const { data, error } = await supabase.from('profiles').insert(val);
-    //   if (error) throw error;
-    //   return data;
-    // } catch (err) {
-    //   console.log(err.message);
-    // }
+    try {
+      const { data, error } = await supabase.from('profiles').insert(val);
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      console.log(err.message);
+    }
   };
 
   const uploadAvatar = async (evt: any) => {
@@ -159,10 +141,9 @@ export const useProfileStore = defineStore('profile', () => {
       }
       profile.value.avatar_url = null;
 
-      const data = await SupaClient.storageUpload('avatars', path.value, file);
-      //   let { data, error } = await supabase.storage
-      //     .from('avatars')
-      //     .upload(path.value, file);
+      let { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(path.value, file);
       if (data) {
         let URL = await getPublicURL(path.value);
         let info = await updateProfile({
