@@ -98,14 +98,14 @@ function toggleEditMode() {
   editMode.value = !editMode.value;
 }
 
-const imgUploading = ref(false);
-const aplImg_path = ref([]);
+const aplImg_path = ref<{}>([]);
 const primeIMG = ref<any>(null);
-const primeSRC = ref<string | null>(null);
 const ifSavedPrimeMsg = ref(false);
+const ifSavedSecMsg = ref(false);
+const imgUploading = ref(false);
+const primeSRC = ref<string | null>(null);
 const secIMG = ref<any>(null);
 const secSRC = ref<string | null>(null);
-const ifSavedSecMsg = ref(false);
 
 const onSelectPrime = (evt: any) => {
   ifSavedPrimeMsg.value = false;
@@ -156,21 +156,20 @@ const saveImgFiles = (e: any, type: string) => {
   }
 };
 
-const full = computed(() => {
-  if (!apl.value!.plastName || !apl.value!.pfirstName) {
+const full = computed((): string | null => {
+  if (apl.value!.plastName || apl.value!.pfirstName) {
     return null;
   } else {
-    return `${apl.value!.plastName.toUpperCase().trim()} ${apl
-      .value!.pfirstName.toUpperCase()
+    return `${apl.value?.plastName!.toUpperCase().trim()} ${apl.value
+      ?.pfirstName!.toUpperCase()
       .trim()}${
       apl.value!.potherName
-        ? ' ' + apl.value!.potherName.toUpperCase().trim()
+        ? ' ' + apl.value?.potherName!.toUpperCase().trim()
         : ''
     }`;
   }
 });
 
-const passportStatus = ref<boolean>(false);
 const passportStatusColor = computed(() => {
   if (apl.value?.passportAvail) return 'success';
   return 'danger';
@@ -187,7 +186,6 @@ const wardRemoved = (e: number) => {
   editedWards.value = wardsRemoved;
 };
 
-// TODO complete supabase database
 const userOfApl = ref<ProfileData | null>(null);
 
 const loadApl = async () => {
@@ -200,53 +198,9 @@ const loadApl = async () => {
 
     if (error) throw error;
     console.log(data[0]);
-
     apl.value = data[0];
-
-    // apl.value!.created_at = data[0].created_at;
-    // apl.value!.pconf_code = data[0].pconf_code
-    //   ? data[0].pconf_code
-    //   : 'No Confirmation Code Yet';
-    // apl.value!.passportAvail = data[0].passportAvail;
-    // apl.value!.user_id = data[0].user_id;
-    // apl.value!.aplImg_path = data[0].aplImg_path;
-    // apl.value!.plastName = data[0].plastName?.toUpperCase();
-    // apl.value!.pfirstName = data[0].pfirstName?.toUpperCase();
-    // apl.value!.potherName = data[0].potherName?.toUpperCase();
-    // apl.value!.pdob_day = data[0].pdob_day;
-    // apl.value!.pdob_month = data[0].pdob_month;
-    // apl.value!.pdob_year = data[0].pdob_year;
-    // apl.value!.ppassport_number = data[0].ppassport_number;
-    // apl.value!.passport_ex_day = data[0].passport_ex_day;
-    // apl.value!.passport_ex_month = data[0].passport_ex_month;
-    // apl.value!.passport_ex_year = data[0].passport_ex_year;
-    // apl.value!.pgender = data[0].pgender?.toUpperCase();
-    // apl.value!.pcontact = data[0].pcontact;
-    // apl.value!.pother_contact = data[0].pother_contact;
-    // apl.value!.pcity_ob = data[0].pcity_ob?.toUpperCase();
-    // apl.value!.pcountry_ob = data[0].pcountry_ob?.toUpperCase();
-    // apl.value!.pemail = data[0].pemail?.toUpperCase();
-    // apl.value!.pcountry_live_today = data[0].pcountry_live_today?.toUpperCase();
-    // apl.value!.peducation_level = data[0].peducation_level;
-    // apl.value!.ppostal = data[0].ppostal?.toUpperCase();
-    // apl.value!.pmarital_status = data[0].pmarital_status?.toUpperCase();
-    // apl.value!.children_number = data[0].children_number;
-    // apl.value!.wards = data[0].wards;
-    // apl.value!.psocial_media = data[0].psocial_media
-    //   ? data[0].psocial_media
-    //   : { twitter: '', facebook: '', instagram: '' };
-
     if (data[0].slastName != '' && data[0].slastName != null) {
       hasSpouse.value = true;
-      // apl.value!.slastName = data[0].slastName?.toUpperCase();
-      // apl.value!.sfirstName = data[0].sfirstName?.toUpperCase();
-      // apl.value!.sotherName = data[0].sotherName?.toUpperCase();
-      // apl.value!.sdob_day = data[0].sdob_day;
-      // apl.value!.sdob_month = data[0].sdob_month;
-      // apl.value!.sdob_year = data[0].sdob_year;
-      // apl.value!.sgender = data[0].sgender?.toUpperCase();
-      // apl.value!.scity_ob = data[0].scity_ob?.toUpperCase();
-      // apl.value!.scountry_ob = data[0].scountry_ob?.toUpperCase();
     }
 
     if (data[0].wards.length > 0) {
@@ -286,30 +240,26 @@ const options: { [key: string]: string } = {
   day: 'numeric',
 };
 
-const changeDate = (date: string) => {
+const changeDate = (date: Date) => {
   const day = new Date(date).toLocaleDateString('en-us', options);
   return day;
 };
 
 const sendRequest = async () => {
+  await loadApl();
   if (request.value == 'edit') {
-    // for edit requests
-    // if (hasFiles.value) {
-    //   aplImg_path.value = await useApplyImgStore().uploadFiles(id.value);
-    // }
-
     try {
       requestLoading.value = true;
       const { data, error } = await supabase.from('requests').insert([
         {
           reason_body: requestBody.value,
-          apl_id: id.value,
+          apl_id: apl.value!.apl_id,
           user_id: supabase.auth.user()!.id,
           modify_type: request.value,
           modify_apl: {
-            aplImg_path: aplImg_path.value,
+            aplImg_path: apl.value!.aplImg_path,
             fullName: full.value,
-            passportAvail: passportStatus.value,
+            passportAvail: apl.value!.passportAvail,
             plastName: apl.value!.plastName?.toUpperCase(),
             pfirstName: apl.value!.pfirstName?.toUpperCase(),
             potherName: apl.value!.potherName?.toUpperCase(),
@@ -392,14 +342,6 @@ const openModal = (e: 'edit' | 'delete') => {
     request.value = 'delete';
   }
 };
-// const openModal = e => {
-//   isRequested.value = true;
-//   if (e.target.innerText.includes('EDIT')) {
-//     request.value = 'edit';
-//   } else {
-//     request.value = 'delete';
-//   }
-// };
 
 const isSavedWard = computed(() => {
   if (
@@ -430,13 +372,6 @@ const showErrorRequest = () => {
     life: 4000,
   });
 };
-
-// watchEffect(() => {
-//   console.log(isSavedWard.value);
-//   console.log(isSavedWardArr.value);
-//   console.log(isSavedWardArr.value.length, Number(children_number.value));
-// console.log(submitButton.value);
-// });
 
 const items = [
   {
@@ -537,18 +472,6 @@ const sendConf_code = async () => {
 };
 
 let imageUpdateLoading = ref(false);
-
-// const updateAplInfo = async (table, rowItems, value) => {
-//   try {
-//     const { data, error } = await supabase
-//       .from(table)
-//       .update(rowItems)
-//       .eq('apl_id', value);
-//     if (error) throw error;
-//   } catch (err:any) {
-//     console.trace(err.message);
-//   }
-// };
 
 async function handleAplImgUpdate(
   id: string | null | undefined,

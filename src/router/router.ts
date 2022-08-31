@@ -48,11 +48,11 @@ const routes: Array<RouteRecordRaw> = [
   //   component: () => import('../components/UserReport'),
   //   ops: true,
   // },
-  // {
-  //   path: '/viewRequest',
-  //   name: 'ViewRequest',
-  //   mponent: () => import('../components/ViewRequest'),
-  // },
+  {
+    path: '/viewRequest',
+    name: 'ViewRequest',
+    component: () => import('../views/ViewRequest.vue'),
+  },
   {
     path: '/:pathMatch(.*)*',
     name: 'PageNotFound',

@@ -27,7 +27,6 @@ import Button from 'primevue/button';
 import Countries from './countries.vue';
 import { Applicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
-import { StringIterator } from 'lodash';
 
 const PRICE_PER_APL: number = 20;
 const PRICE_PER_WARD: number = 20;
@@ -45,7 +44,7 @@ const totalPayment: ComputedRef<number> = computed(() => {
 });
 
 const apl = reactive<Applicant>({
-  created_at: new Date().toLocaleString().split(',')[0],
+  created_at: new Date(),
   apl_id: null,
   plastName: null,
   pfirstName: null,
@@ -98,11 +97,11 @@ const apl = reactive<Applicant>({
 
 const toast = useToast();
 const full = computed((): string | null => {
-  if (!apl.plastName || !apl.pfirstName) {
+  if (apl!.plastName || apl!.pfirstName) {
     return null;
   } else {
-    return `${apl.plastName.toUpperCase().trim()} ${apl.pfirstName
-      .toUpperCase()
+    return `${apl.plastName!.toUpperCase().trim()} ${apl
+      .pfirstName!.toUpperCase()
       .trim()}${
       apl.potherName ? ' ' + apl.potherName.toUpperCase().trim() : ''
     }`;
@@ -300,13 +299,6 @@ const cancelRender = () => {
 };
 
 let placeholderActive = ref(false);
-
-const handleUsePlaceholder = () => {
-  placeholderActive.value = true;
-  editMode.value = false;
-
-  apl.aplImg_path!.primePath = ['avatar.svg'];
-};
 
 // TODO use vulidate to validate apply form
 
@@ -513,12 +505,6 @@ const saveImgFiles = (e: any, type: string) => {
                   @select="onSelectPrime"
                   @uploader="e => saveImgFiles(e, 'prime')"
                   :disabled="disabled"
-                />
-                <Button
-                  v-if="editMode"
-                  label="Use Placeholder Image"
-                  class="p-button-help"
-                  @click="handleUsePlaceholder()"
                 />
                 <InlineMessage v-if="primeIMG && editMode" severity="info"
                   >Image is not saved until clicked

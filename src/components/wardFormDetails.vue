@@ -11,7 +11,11 @@ import Button from 'primevue/button';
 import { computed } from '@vue/reactivity';
 import { WardsApplicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
+import { useRequestStore } from '../store/requestStore';
+import { storeToRefs } from 'pinia';
+import ImageView from '../components/imgView.vue';
 
+const { viewWardRequestImage } = storeToRefs(useRequestStore());
 const toast = useToast();
 const props = defineProps<{
   index: number;
@@ -164,8 +168,12 @@ async function handleAplImgUpdate(
     </div>
     <div class="w-fit mx-auto">
       <slot name="imageView">
-        <!-- <ImageView :url="wardsPath ? wardsPath[index] : ''" /> -->
+        <ImageView
+          v-if="viewWardRequestImage"
+          :url="wardsPath ? wardsPath[index] : ''"
+        />
         <Avatar
+          v-else
           class="my-3 mb-0"
           :editMode="editMode"
           :url="wardImage"

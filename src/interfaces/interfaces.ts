@@ -26,7 +26,7 @@ export interface WardsApplicant {
 }
 
 export interface Applicant {
-  created_at: string;
+  created_at: Date;
   apl_id: _Null<string>;
   plastName: _Null<string>;
   pfirstName: _Null<string>;

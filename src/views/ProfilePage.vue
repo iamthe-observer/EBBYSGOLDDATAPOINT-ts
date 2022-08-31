@@ -20,8 +20,8 @@ const profileStore = useProfileStore();
 const { fullname } = storeToRefs(useProfileStore());
 const { username } = storeToRefs(useProfileStore());
 const usernameUploading = ref(false);
-const userName = ref('');
-const fullName = ref('');
+const userName = ref<string | null>('');
+const fullName = ref<string | null>('');
 const { url } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
 const editMode = ref(false);
@@ -164,7 +164,7 @@ async function updatePassword() {
   }
 }
 
-const showSuccess = (username: string, fullname: string) => {
+const showSuccess = (username: string | null, fullname: string | null) => {
   toast.add({
     severity: 'success',
     summary: 'Profile Data Updated!',

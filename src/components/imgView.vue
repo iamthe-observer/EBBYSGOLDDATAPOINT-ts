@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{url:string}>();
+const props = defineProps<{ url: string | null | undefined }>();
 </script>
 
 <template>
@@ -8,7 +8,7 @@ const props = defineProps<{url:string}>();
   >
     <img
       class="rounded-lg object-fill aspect-square"
-      :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/${url}`"
+      :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${url}`"
     />
   </div>
 </template>

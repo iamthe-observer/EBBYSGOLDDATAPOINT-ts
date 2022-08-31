@@ -47,7 +47,7 @@ onBeforeMount(async () => {
     let { data, error } = await supabase.from('admin_emails').select('*');
     if (error) throw error;
     adminEmails.value = data;
-  } catch (err: object) {
+  } catch (err: any) {
     console.log(err.message);
   }
 });
@@ -88,7 +88,7 @@ async function loginUser(user: UserDetails) {
       router.push({ name: 'Dashboard' });
       loading.value = false;
       return;
-    } catch (err: object) {
+    } catch (err: any) {
       errMsg.value = err.message;
       loading.value = false;
       setTimeout(() => {

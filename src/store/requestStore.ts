@@ -22,6 +22,12 @@ export const useRequestStore = defineStore('requests', () => {
     }
   };
 
+  const viewWardRequestImage = ref<boolean>(false);
+
+  const setViewRequestForWardImageDisplay = (bol: boolean): void => {
+    viewWardRequestImage.value = bol;
+  };
+
   const fullName = (x: Applicant) => {
     if (x) {
       const ln = x.plastName;
@@ -133,5 +139,7 @@ export const useRequestStore = defineStore('requests', () => {
     currentRequest,
     handleOpenAplRequest,
     loading,
+    setViewRequestForWardImageDisplay,
+    viewWardRequestImage,
   };
 });

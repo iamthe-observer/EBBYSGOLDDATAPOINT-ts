@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { useProfileStore } from '../store/profileStore';
 import { onMounted, onBeforeUnmount } from 'vue';

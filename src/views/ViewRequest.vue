@@ -1,6 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { ref, onMounted, computed } from 'vue';
+import {
+  ref,
+  onMounted,
+  computed,
+  reactive,
+  onBeforeMount,
+  onBeforeUnmount,
+} from 'vue';
 import { supabase } from '../supabase/supabase';
 import { useToast } from 'primevue/usetoast';
 import { useApplyImgStore } from '../store/aplImgStore';
@@ -12,32 +19,43 @@ import WardFormDetails from '../components/wardFormDetails.vue';
 import Button from 'primevue/button';
 import ToggleButton from 'primevue/togglebutton';
 import Toast from 'primevue/toast';
-import Avatar from '../components/avatar.vue';
-import FileUpload from 'primevue/fileupload';
-import InlineMessage from 'primevue/inlinemessage';
 import _ from 'lodash';
 import { useRequestStore } from '../store/requestStore';
-import ImgView from '../components/imgView.vue';
+import ImageView from '../components/imgView.vue';
+import {
+  ProfileData,
+  Applicant,
+  Requests,
+  WardsApplicant,
+} from '../interfaces/interfaces';
+
+onBeforeMount(() => {
+  useRequestStore().setViewRequestForWardImageDisplay(true);
+});
+
+onBeforeUnmount(() => {
+  useRequestStore().setViewRequestForWardImageDisplay(false);
+});
 
 const toast = useToast();
-const loading = ref(false);
+const loading = ref<boolean>(false);
 const route = useRoute();
 const id = computed(() => route.params.id);
 const { curr_request } = storeToRefs(useRequestStore());
 const modified_apl = computed(() => {
-  return curr_request.value.modify_apl;
+  return curr_request.value!.modify_apl;
 });
 const m_education_level = computed(() => {
-  return curr_request.value.modify_apl.peducation_level.toLowerCase();
+  return curr_request.value?.modify_apl.peducation_level!.toLowerCase();
 });
 
-async function handleApprove(request) {
-  if (request.modify_type == 'edit') {
+async function handleApprove(request: Requests | null) {
+  if (request!.modify_type == 'edit') {
     try {
       const { data: updateApl, error: errorUpdate } = await supabase
         .from('applicants')
-        .update(request.modify_apl)
-        .eq('apl_id', request.apl_id);
+        .update(request!.modify_apl)
+        .eq('apl_id', request!.apl_id);
       if (errorUpdate) throw errorUpdate;
 
       console.log(updateApl);
@@ -45,14 +63,14 @@ async function handleApprove(request) {
       const { data: acceptedRequest, error: requestError } = await supabase
         .from('requests')
         .update({ status: 'accepted' })
-        .eq('id', request.id);
+        .eq('id', request!.id);
       if (requestError) throw requestError;
 
       console.log(acceptedRequest, 'accepted');
 
       toast.add({
         severity: 'success',
-        summary: `${request.modify_apl.fullName}'s request has been approved.`,
+        summary: `${request!.modify_apl.fullName}'s request has been approved.`,
         detail: 'Edited Applicant.',
         life: 2000,
       });
@@ -60,7 +78,7 @@ async function handleApprove(request) {
       setTimeout(() => {
         useRequestStore().getRequests();
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       toast.add({
         severity: 'error',
@@ -74,7 +92,7 @@ async function handleApprove(request) {
       const { data: delApl, error: errorUpdate } = await supabase
         .from('applicants')
         .delete()
-        .eq('apl_id', request.apl_id);
+        .eq('apl_id', request!.apl_id);
       if (errorUpdate) throw errorUpdate;
 
       console.log(delApl);
@@ -82,14 +100,14 @@ async function handleApprove(request) {
       const { data: acceptedRequest, error: requestError } = await supabase
         .from('requests')
         .update({ status: 'accepted' })
-        .eq('id', request.id);
+        .eq('id', request!.id);
       if (requestError) throw requestError;
 
       console.log(acceptedRequest, 'accepted');
 
       toast.add({
         severity: 'success',
-        summary: `${request.modify_apl.fullName}'s request has been approved.`,
+        summary: `${request!.modify_apl.fullName}'s request has been approved.`,
         detail: 'Deleted Applicant.',
         life: 2000,
       });
@@ -97,7 +115,7 @@ async function handleApprove(request) {
       setTimeout(() => {
         useRequestStore().getRequests();
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
       toast.add({
         severity: 'error',
@@ -109,98 +127,163 @@ async function handleApprove(request) {
   }
 }
 
-async function handleReject(request) {
-  const { data: acceptedRequest, error: requestError } = await supabase
-    .from('requests')
-    .update({ status: 'rejected' })
-    .eq('id', request.id);
-  if (requestError) throw requestError;
+async function handleReject(request: Requests | null) {
+  try {
+    const { data: acceptedRequest, error: requestError } = await supabase
+      .from('requests')
+      .update({ status: 'rejected' })
+      .eq('id', request!.id);
+    if (requestError) throw requestError;
 
-  console.log(acceptedRequest, 'rejected');
-  toast.add({
-    severity: 'success',
-    summary: `${request.modify_apl.fullName}'s request has been approved.`,
-    detail: 'Deleted Applicant.',
-    life: 2000,
-  });
+    console.log(acceptedRequest, 'rejected');
+    toast.add({
+      severity: 'success',
+      summary: `${request!.modify_apl.fullName}'s request has been approved.`,
+      detail: 'Deleted Applicant.',
+      life: 2000,
+    });
 
-  setTimeout(() => {
-    useRequestStore().getRequests();
-  }, 2000);
+    setTimeout(() => {
+      useRequestStore().getRequests();
+    }, 2000);
+  } catch (error: any) {
+    console.log(error);
+    toast.add({
+      severity: 'error',
+      summary: `${
+        request!.modify_apl.fullName
+      }'s request could not be approved.`,
+      detail: 'Check internet connection and try again..',
+      life: 6000,
+    });
+  }
 }
 
-const user_id = ref(null);
-const plastName = ref(null);
-const pfirstName = ref(null);
-const potherName = ref(null);
-const pdob_day = ref(null);
-const pdob_month = ref(null);
-const pdob_year = ref(null);
-const passport_number = ref(null);
-const ped_day = ref(null);
-const ped_month = ref(null);
-const ped_year = ref(null);
-const pgender = ref(null);
-const pcity_ob = ref(null);
-const conf_code = ref(null);
-const pcountry_ob = ref(null);
-const email = ref(null);
-const country_live_today = ref(null);
-const education_level = ref(null);
-const pcontact = ref(null);
-const pother_contact = ref(null);
-const postal = ref(null);
-const marital_status = ref(null);
-const children_number = ref(0);
-const wards = ref(null);
-const psocial_media = ref({
-  twitter: null,
-  instagram: null,
-  facebook: null,
+let apl = reactive<Applicant>({
+  created_at: new Date(),
+  apl_id: null,
+  plastName: null,
+  pfirstName: null,
+  potherName: null,
+  pdob_day: null,
+  pdob_month: null,
+  pdob_year: null,
+  pcity_ob: null,
+  pcountry_ob: null,
+  pgender: null,
+  pconf_code: null,
+  pemail: null,
+  ppassport_number: null,
+  passport_ex_day: null,
+  passport_ex_month: null,
+  passport_ex_year: null,
+  pcountry_live_today: null,
+  peducation_level: null,
+  ppostal: null,
+  pmarital_status: 'unmarried',
+  children_number: 0,
+  fullName: null,
+  user_id: supabase.auth.user()!.id,
+  pcontact: null,
+  slastName: null,
+  sfirstName: null,
+  sotherName: null,
+  scity_ob: null,
+  scountry_ob: null,
+  sgender: null,
+  wards: [],
+  sdob_day: null,
+  sdob_month: null,
+  sdob_year: null,
+  totalPayment: 0,
+  passportAvail: false,
+  created_at_date: new Date().toLocaleString().split(',')[0],
+  pother_contact: null,
+  psocial_media: {
+    facebook: null,
+    instagram: null,
+    twitter: null,
+  },
+  aplImg_path: {
+    primePath: [],
+    secPath: [],
+    wardsPath: [],
+  },
 });
 
-const slastName = ref(null);
-const sfirstName = ref(null);
-const sotherName = ref(null);
-const sdob_day = ref(null);
-const sdob_month = ref(null);
-const sdob_year = ref(null);
-const sgender = ref(null);
-const scity_ob = ref(null);
-const scountry_ob = ref(null);
+// const user_id = ref(null);
+// const plastName = ref(null);
+// const pfirstName = ref(null);
+// const potherName = ref(null);
+// const pdob_day = ref(null);
+// const pdob_month = ref(null);
+// const pdob_year = ref(null);
+// const passport_number = ref(null);
+// const ped_day = ref(null);
+// const ped_month = ref(null);
+// const ped_year = ref(null);
+// const pgender = ref(null);
+// const pcity_ob = ref(null);
+// const conf_code = ref(null);
+// const pcountry_ob = ref(null);
+// const email = ref(null);
+// const country_live_today = ref(null);
+// const education_level = ref(null);
+// const pcontact = ref(null);
+// const pother_contact = ref(null);
+// const postal = ref(null);
+// const marital_status = ref(null);
+// const children_number = ref(0);
+// const wards = ref(null);
+// const psocial_media = ref({
+//   twitter: null,
+//   instagram: null,
+//   facebook: null,
+// });
+
+// const slastName = ref(null);
+// const sfirstName = ref(null);
+// const sotherName = ref(null);
+// const sdob_day = ref(null);
+// const sdob_month = ref(null);
+// const sdob_year = ref(null);
+// const sgender = ref(null);
+// const scity_ob = ref(null);
+// const scountry_ob = ref(null);
 const primePath = ref([]);
 const secPath = ref([]);
 const wardsPath = ref([]);
-const created_at = ref(null);
+// const created_at = ref(null);
 
 const hasSpouse = ref(false);
 const hasWards = ref(false);
 const request = ref(null);
 const isRequested = ref(false);
-const isSavedWardArr = ref([]);
-const editedWards = ref([]);
+const isSavedWardArr = ref<{}[]>([]);
+const editedWards = ref<WardsApplicant[]>([]);
 const disabled = ref(false);
 const editMode = ref(false);
 function toggleEditMode() {
   editMode.value = !editMode.value;
 }
 
+const userOfApl = ref<ProfileData | null>(null);
 const aplImg_path = ref([]);
-const primeIMG = ref(null);
+const primeIMG = ref<any>(null);
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
 const imgUploading = ref(false);
-const primeSRC = ref(null);
-const secIMG = ref(null);
-const secSRC = ref(null);
+const primeSRC = ref<string | null>(null);
+const secIMG = ref<any>(null);
+const secSRC = ref<string | null>(null);
 
-const onSelectPrime = evt => {
+const onSelectPrime = (evt: any) => {
   ifSavedPrimeMsg.value = false;
   primeIMG.value = evt.files[0];
   primeSRC.value = evt.files[0].objectURL;
 };
 
-const onSelectSec = evt => {
+const onSelectSec = (evt: any) => {
   ifSavedSecMsg.value = false;
   secIMG.value = evt.files[0];
   secSRC.value = evt.files[0].objectURL;
@@ -212,18 +295,30 @@ const primeImage = computed(() => {
   if (primeIMG.value) {
     return primeSRC.value;
   } else {
-    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${primePath.value}`;
+    if (apl?.aplImg_path.primePath?.length) {
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
+        apl?.aplImg_path.primePath![0]
+      }`;
+    } else {
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
+    }
   }
 });
 const secImage = computed(() => {
   if (secIMG.value) {
     return secSRC.value;
   } else {
-    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${secPath.value}`;
+    if (apl?.aplImg_path.secPath?.length) {
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
+        apl?.aplImg_path.secPath![0]
+      }`;
+    } else {
+      return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`;
+    }
   }
 });
 
-const saveImgFiles = (e, type = null) => {
+const saveImgFiles = (e: any, type: string) => {
   useApplyImgStore().setFiles(e.files[0], type);
   toggleEditMode();
   if (type == 'prime') {
@@ -233,109 +328,37 @@ const saveImgFiles = (e, type = null) => {
   }
 };
 
-const full = computed(() => {
-  if (!plastName.value || !pfirstName.value) {
+const full = computed((): string | null => {
+  if (apl!.plastName || apl!.pfirstName) {
     return null;
   } else {
-    return `${plastName.value.toUpperCase().trim()} ${pfirstName.value
-      .toUpperCase()
+    return `${apl?.plastName!.toUpperCase().trim()} ${apl
+      ?.pfirstName!.toUpperCase()
       .trim()}${
-      potherName.value ? ' ' + potherName.value.toUpperCase().trim() : ''
+      apl!.potherName ? ' ' + apl?.potherName!.toUpperCase().trim() : ''
     }`;
   }
 });
 
-const passportStatus = ref(null);
 const passportStatusColor = computed(() => {
-  if (passportStatus.value) return 'success';
+  if (apl!.passportAvail) return 'success';
   return 'danger';
 });
 
-const wardEmitted = e => {
+const wardEmitted = (e: WardsApplicant) => {
   editedWards.value.push(e);
   isSavedWardArr.value.push({});
 };
 
 console.log(modified_apl.value);
 
-const wardRemoved = e => {
+const wardRemoved = (e: number) => {
   isSavedWardArr.value.pop();
   const wardsRemoved = editedWards.value.filter(ward => ward.index !== e);
   editedWards.value = wardsRemoved;
 };
 
-// TODO complete supabase database
-
-const loadApl = async () => {
-  loading.value = true;
-  try {
-    const { data, error } = await supabase
-      .from('applicants')
-      .select('*')
-      .eq('apl_id', curr_request.value.apl_id);
-
-    if (error) throw error;
-    created_at.value = data[0].created_at;
-    conf_code.value = data[0].pconf_code
-      ? data[0].pconf_code
-      : 'No Confirmation Code Yet';
-    passportStatus.value = data[0].passportAvail;
-    user_id.value = data[0].user_id;
-    aplImg_path.value = data[0].aplImg_path;
-    primePath.value = data[0].aplImg_path.primePath[0];
-    secPath.value = data[0].aplImg_path.secPath[0];
-    wardsPath.value = data[0].aplImg_path.wardsPath;
-    plastName.value = data[0].plastName?.toUpperCase();
-    pfirstName.value = data[0].pfirstName?.toUpperCase();
-    potherName.value = data[0].potherName?.toUpperCase();
-    pdob_day.value = data[0].pdob_day;
-    pdob_month.value = data[0].pdob_month;
-    pdob_year.value = data[0].pdob_year;
-    passport_number.value = data[0].ppassport_number;
-    ped_day.value = data[0].passport_ex_day;
-    ped_month.value = data[0].passport_ex_month;
-    ped_year.value = data[0].passport_ex_year;
-    pgender.value = data[0].pgender?.toUpperCase();
-    pcontact.value = data[0].pcontact;
-    pother_contact.value = data[0].pother_contact;
-    pcity_ob.value = data[0].pcity_ob?.toUpperCase();
-    pcountry_ob.value = data[0].pcountry_ob?.toUpperCase();
-    email.value = data[0].pemail?.toUpperCase();
-    country_live_today.value = data[0].pcountry_live_today?.toUpperCase();
-    education_level.value = data[0].peducation_level;
-    postal.value = data[0].ppostal?.toUpperCase();
-    marital_status.value = data[0].pmarital_status?.toUpperCase();
-    children_number.value = data[0].children_number;
-    wards.value = data[0].wards;
-    psocial_media.value = data[0].psocial_media
-      ? data[0].psocial_media
-      : { twitter: '', facebook: '', instagram: '' };
-
-    if (data[0].slastName != '' && data[0].slastName != null) {
-      hasSpouse.value = true;
-      slastName.value = data[0].slastName?.toUpperCase();
-      sfirstName.value = data[0].sfirstName?.toUpperCase();
-      sotherName.value = data[0].sotherName?.toUpperCase();
-      sdob_day.value = data[0].sdob_day;
-      sdob_month.value = data[0].sdob_month;
-      sdob_year.value = data[0].sdob_year;
-      sgender.value = data[0].sgender?.toUpperCase();
-      scity_ob.value = data[0].scity_ob?.toUpperCase();
-      scountry_ob.value = data[0].scountry_ob?.toUpperCase();
-    }
-
-    if (data[0].wards.length > 0) {
-      hasWards.value = true;
-    }
-    loading.value = false;
-  } catch (err) {
-    console.log(err.message);
-    loading.value = false;
-    showErrorOnload(err.message);
-  }
-};
-
-const showErrorOnload = errorMsg => {
+const showErrorOnload = (errorMsg: string) => {
   toast.add({
     severity: 'danger',
     summary: `Failed to load resource.`,
@@ -344,100 +367,51 @@ const showErrorOnload = errorMsg => {
   });
 };
 
+const loadApl = async () => {
+  loading.value = true;
+  try {
+    const { data, error } = await supabase
+      .from('applicants')
+      .select('*')
+      .eq('apl_id', curr_request.value?.apl_id);
+
+    if (error) throw error;
+    console.log(data[0]);
+    apl = data[0];
+    if (data[0].slastName != '' && data[0].slastName != null) {
+      hasSpouse.value = true;
+    }
+
+    if (data[0].wards.length > 0) {
+      hasWards.value = true;
+    }
+
+    let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
+    userOfApl.value = user[0];
+
+    loading.value = false;
+  } catch (err: any) {
+    console.log(err.message);
+    loading.value = false;
+    showErrorOnload(err.message);
+  }
+};
+
 onMounted(() => {
   loadApl();
-  // getComparedModifiedApl();
 });
 
-const options = {
+const options: object = {
   weekday: 'long',
   year: 'numeric',
   month: 'short',
   day: 'numeric',
 };
 
-const changeDate = date => {
+const changeDate = (date: Date) => {
   const day = new Date(date).toLocaleDateString('en-us', options);
   return day;
 };
-
-const openModal = e => {
-  isRequested.value = true;
-  if (e == 'edit') {
-    request.value = 'edit';
-  } else {
-    request.value = 'delete';
-  }
-};
-// const openModal = e => {
-//   isRequested.value = true;
-//   if (e.target.innerText.includes('EDIT')) {
-//     request.value = 'edit';
-//   } else {
-//     request.value = 'delete';
-//   }
-// };
-
-const isSavedWard = computed(() => {
-  if (
-    isSavedWardArr.value.length === Number(children_number.value) &&
-    plastName.value.trim() !== '' &&
-    pfirstName.value.trim() !== ''
-  ) {
-    return true;
-  } else {
-    return false;
-  }
-});
-
-const showSuccessRequest = () => {
-  toast.add({
-    severity: 'success',
-    summary: `${request.value} request success.`,
-    detail: `Your ${request.value} request has been sent! Please contact supervisor to review and approve your request.`,
-    life: 4000,
-  });
-};
-
-const showErrorRequest = () => {
-  toast.add({
-    severity: 'error',
-    summary: `${request.value} request failed.`,
-    detail: `Your ${request.value} request has not been sent! Please check for internet connectivity issues.`,
-    life: 4000,
-  });
-};
-
-// watchEffect(() => {
-//   console.log(isSavedWard.value);
-//   console.log(isSavedWardArr.value);
-//   console.log(isSavedWardArr.value.length, Number(children_number.value));
-// console.log(submitButton.value);
-// });
-
-const items = [
-  {
-    label: 'Request Edit',
-    icon: 'pi pi-user-edit',
-    command() {
-      openModal('edit');
-    },
-  },
-  {
-    label: 'Request Delete',
-    icon: 'pi pi-trash',
-    command() {
-      openModal('delete');
-    },
-  },
-  {
-    label: 'Edit Confirmation Code',
-    icon: 'pi pi-key',
-    command() {
-      openConfModal();
-    },
-  },
-];
 
 const showSuccessConf = () => {
   toast.add({
@@ -456,7 +430,12 @@ const showErrorConf = () => {
   });
 };
 
-const showToast = (severity, summary, detail, life = 4000) => {
+const showToast = (
+  severity: string,
+  summary: string,
+  detail: string,
+  life: number = 4000
+) => {
   toast.add({
     severity: severity,
     summary: summary,
@@ -472,56 +451,10 @@ const openConfModal = () => {
   isConf_code.value = !isConf_code.value;
 };
 
-const getConf_code = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('applicants')
-      .select('pconf_code')
-      .eq('apl_id', id.value);
-    if (error) throw error;
-    conf_code.value = data[0].pconf_code;
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-const sendConf_code = async () => {
-  confloading.value = true;
-  try {
-    const { data, error } = await supabase
-      .from('applicants')
-      .update({
-        pconf_code: newConf_code.value,
-      })
-      .eq('apl_id', id.value);
-
-    if (error) throw error;
-  } catch (error) {
-    confloading.value = false;
-    showErrorConf();
-    console.log(error.message);
-  } finally {
-    confloading.value = false;
-    isConf_code.value = false;
-    getConf_code();
-    showSuccessConf();
-  }
-};
-
 let imageUpdateLoading = ref(false);
 
-async function handleAplImgUpdate(path, type) {
-  imageUpdateLoading.value = true;
-  await useApplyImgStore().updateSingleAplImg(path);
-  imageUpdateLoading.value = false;
-  ifSavedPrimeMsg.value = false;
-  ifSavedSecMsg.value = false;
-  showToast('success', `${type} Applicant Image Updated`, '');
-  useApplyImgStore().resetFiles();
-}
-
 const getUser4Apl = computed(() => {
-  let user = useProfileStore().Users.filter(user => user.id === user_id.value);
+  let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
   return user[0];
 });
 
@@ -550,7 +483,7 @@ _.forEach(request.value, (value, key) => {
         <h1
           class="text-center bg-gradient-to-br from-cyan-300 to-lime-300 text-[1.5rem] font-bold mt-10 mx-auto text-white px-4 py-2 rounded-xl normal-case after:absolute after:px-[10px] after:bg-teal-400 after:rounded-full after:text-center after:text-[0.5em] after:right-[20px] after:text-slate-50 after:top-[-10px] after:font-extrabold after:content-['Reason_To_Modify'] after:shadow-xl relative"
         >
-          {{ curr_request.reason_body.toLowerCase() }}
+          {{ curr_request?.reason_body!.toLowerCase() }}
         </h1>
 
         <h2
@@ -569,7 +502,7 @@ _.forEach(request.value, (value, key) => {
           <h1
             class="text-center bg-gradient-to-br from-indigo-300 to-purple-500 text-[0.8rem] font-bold my-1 text-white px-4 py-2 rounded-xl"
           >
-            {{ changeDate(created_at) }}
+            {{ changeDate(apl!.created_at) }}
           </h1>
         </div>
 
@@ -580,46 +513,9 @@ _.forEach(request.value, (value, key) => {
             Primary Applicant
           </div>
           <div class="w-fit mx-auto rounded-lg">
-            <ImgView :url="primePath ? 'applicants/' + primePath : ''" />
-            <!-- <Avatar
-              class="my-3 mb-0"
-              :editMode="editMode"
-              :uploading="imgUploading"
-              :url="primeImage"
-              @edit="toggleEditMode"
-            >
-              <template #uploadFile>
-                <div class="w-fit mx-auto flex flex-col gap-2 items-center">
-                  <FileUpload
-                    v-if="editMode"
-                    :customUpload="true"
-                    mode="basic"
-                    accept="image/*"
-                    @select="onSelectPrime"
-                    @uploader="e => saveImgFiles(e, 'prime')"
-                    :disabled="disabled"
-                  />
-                  <Button
-                    v-if="ifSavedPrimeMsg"
-                    class="p-button bg-indigo-500 self-center"
-                    icon="pi
-                        pi-upload"
-                    @click="handleAplImgUpdate(primePath, 'Primary')"
-                    label="Update Image"
-                    :loading="imageUpdateLoading"
-                  />
-                  <InlineMessage
-                    v-if="!ifSavedPrimeMsg && editMode"
-                    severity="info"
-                    >Image is not saved until clicked
-                    <i class="pi pi-arrow-up"></i
-                  ></InlineMessage>
-                  <InlineMessage v-if="ifSavedPrimeMsg" severity="success"
-                    >Saved Image!</InlineMessage
-                  >
-                </div>
-              </template>
-            </Avatar> -->
+            <ImageView
+              :url="curr_request?.modify_apl.aplImg_path.primePath![0]"
+            />
           </div>
           <div
             class="grid grid-cols-3 relative mb-[50px] after:absolute after:px-[10px] after:bg-teal-400 after:rounded-full after:text-center after:text-[0.7em] after:left-[40px] after:text-slate-50 after:top-[-3px] after:font-extrabold after:content-['Main_Information'] after:shadow-xl"
@@ -631,7 +527,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="ln">Last Name:</label>
                 <input
                   required
-                  v-model="plastName"
+                  v-model="apl!.plastName"
                   id="ln"
                   name="lastName"
                   type="text"
@@ -642,7 +538,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="fn">First Name:</label>
                 <input
                   required
-                  v-model="pfirstName"
+                  v-model="apl!.pfirstName"
                   id="fn"
                   type="text"
                   name="firstName"
@@ -653,7 +549,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="on">Other Name:</label>
                 <input
                   required
-                  v-model="potherName"
+                  v-model="apl!.potherName"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -708,7 +604,7 @@ _.forEach(request.value, (value, key) => {
               <section>
                 <input
                   required
-                  v-model="pdob_day"
+                  v-model="apl!.pdob_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -717,7 +613,7 @@ _.forEach(request.value, (value, key) => {
                 />
                 <input
                   required
-                  v-model="pdob_month"
+                  v-model="apl!.pdob_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -726,7 +622,7 @@ _.forEach(request.value, (value, key) => {
                 />
                 <input
                   required
-                  v-model="pdob_year"
+                  v-model="apl!.pdob_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -742,7 +638,7 @@ _.forEach(request.value, (value, key) => {
               <select
                 required
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                v-model="pgender"
+                v-model="apl!.pgender"
               >
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
@@ -757,7 +653,7 @@ _.forEach(request.value, (value, key) => {
                 id="cityb"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                v-model="pcity_ob"
+                v-model="apl!.pcity_ob"
               />
             </div>
 
@@ -827,7 +723,7 @@ _.forEach(request.value, (value, key) => {
             >
               <label for="em">Confirmation Code:</label>
               <input
-                v-model="conf_code"
+                v-model="apl!.pconf_code"
                 id="em"
                 disabled
                 type="text"
@@ -842,7 +738,7 @@ _.forEach(request.value, (value, key) => {
               <input
                 required
                 id="counb"
-                v-model="pcountry_ob"
+                v-model="apl!.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
               />
@@ -854,7 +750,7 @@ _.forEach(request.value, (value, key) => {
               <label for="pn">Phone Number:</label>
               <input
                 required
-                v-model="pcontact"
+                v-model="apl!.pcontact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -893,7 +789,7 @@ _.forEach(request.value, (value, key) => {
               <label for="pn">Next Of Kin Phone Number(s):</label>
               <input
                 required
-                v-model="pother_contact"
+                v-model="apl!.pother_contact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -905,7 +801,7 @@ _.forEach(request.value, (value, key) => {
             >
               <label for="em">Email:</label>
               <input
-                v-model="email"
+                v-model="apl!.pemail"
                 id="em"
                 type="email"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -944,13 +840,13 @@ _.forEach(request.value, (value, key) => {
                 >Passport Number:
                 <Tag
                   class="h-4"
-                  :value="passportStatus ? 'Available' : 'Unavailable'"
+                  :value="apl!.passportAvail ? 'Available' : 'Unavailable'"
                   :severity="passportStatusColor"
                 ></Tag
               ></label>
               <div class="flex w-full gap-[20px] items-center justify-evenly">
                 <ToggleButton
-                  v-model="passportStatus"
+                  v-model="apl!.passportAvail"
                   onIcon="pi pi-check"
                   offIcon="pi pi-times"
                   class="h-8 font-Outfit rounded-xl"
@@ -961,7 +857,7 @@ _.forEach(request.value, (value, key) => {
                 <input
                   id="em"
                   type="text"
-                  v-model="passport_number"
+                  v-model="apl!.ppassport_number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold uppercase"
                 />
               </div>
@@ -973,7 +869,7 @@ _.forEach(request.value, (value, key) => {
               <label>Passport Expiration Date:</label>
               <section>
                 <input
-                  v-model="ped_day"
+                  v-model="apl!.passport_ex_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -981,7 +877,7 @@ _.forEach(request.value, (value, key) => {
                   maxlength="2"
                 />
                 <input
-                  v-model="ped_month"
+                  v-model="apl!.passport_ex_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -989,7 +885,7 @@ _.forEach(request.value, (value, key) => {
                   maxlength="2"
                 />
                 <input
-                  v-model="ped_year"
+                  v-model="apl!.passport_ex_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -1072,7 +968,7 @@ _.forEach(request.value, (value, key) => {
             >
               <label for="pa">Postal Address:</label>
               <input
-                v-model="postal"
+                v-model="apl!.ppostal"
                 id="pa"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1084,7 +980,7 @@ _.forEach(request.value, (value, key) => {
               <label for="cwylt">Country where You live today:</label>
               <input
                 required
-                v-model="country_live_today"
+                v-model="apl!.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1122,7 +1018,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="ln">Facebook:</label>
                 <input
                   required
-                  v-model="psocial_media.facebook"
+                  v-model="apl!.psocial_media.facebook"
                   id="ln"
                   name="facebook"
                   type="text"
@@ -1133,7 +1029,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="fn">Instagram:</label>
                 <input
                   required
-                  v-model="psocial_media.instagram"
+                  v-model="apl!.psocial_media.instagram"
                   id="fn"
                   type="text"
                   name="instagram"
@@ -1144,7 +1040,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="on">Twitter:</label>
                 <input
                   required
-                  v-model="psocial_media.twitter"
+                  v-model="apl!.psocial_media.twitter"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -1197,14 +1093,14 @@ _.forEach(request.value, (value, key) => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="marital_status"
+                v-model="apl!.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
-                <option value="UNMARRIED">Unmarried</option>
-                <option value="MARRIED">Married</option>
-                <option value="DIVORCED">Divorced</option>
-                <option value="WIDOWED">Widowed</option>
-                <option value="LEGALLY SEPARATED">Legally Separated</option>
+                <option value="unmarried">Unmarried</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+                <option value="legally separated">Legally Separated</option>
               </select>
             </div>
 
@@ -1214,7 +1110,7 @@ _.forEach(request.value, (value, key) => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="education_level"
+                v-model="apl!.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1247,11 +1143,11 @@ _.forEach(request.value, (value, key) => {
                 v-model="modified_apl.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
-                <option value="UNMARRIED">Unmarried</option>
-                <option value="MARRIED">Married</option>
-                <option value="DIVORCED">Divorced</option>
-                <option value="WIDOWED">Widowed</option>
-                <option value="LEGALLY SEPARATED">Legally Separated</option>
+                <option value="unmarried">Unmarried</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="widowed">Widowed</option>
+                <option value="legally separated">Legally Separated</option>
               </select>
             </div>
 
@@ -1290,7 +1186,7 @@ _.forEach(request.value, (value, key) => {
             >
               <label for="number-of-children">Number of Children:</label>
               <input
-                v-model="children_number"
+                v-model="apl!.children_number"
                 id="number-of-children"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1321,49 +1217,8 @@ _.forEach(request.value, (value, key) => {
               Secondary Applicant
             </div>
 
-            <!-- <div class="w-fit mx-auto rounded-lg">
-              <ImageView :url="secPath ? secPath : ''" />
-            </div> -->
-            <div class="w-fit mx-auto">
-              <Avatar
-                class="my-3 mb-0"
-                :editMode="editMode"
-                :uploading="imgUploading"
-                :url="secImage"
-                @edit="toggleEditMode"
-              >
-                <template #uploadFile>
-                  <div class="w-fit mx-auto flex flex-col items-center gap-2">
-                    <FileUpload
-                      v-if="editMode"
-                      :customUpload="true"
-                      mode="basic"
-                      accept="image/*"
-                      @select="onSelectSec"
-                      @uploader="e => saveImgFiles(e, 'sec')"
-                      :disabled="disabled"
-                    />
-                    <Button
-                      v-if="ifSavedSecMsg"
-                      class="p-button bg-indigo-500 self-center"
-                      icon="pi
-                        pi-upload"
-                      @click="handleAplImgUpdate(secPath, 'Secondary')"
-                      label="Update Image"
-                      :loading="imageUpdateLoading"
-                    />
-                    <InlineMessage
-                      v-if="!ifSavedSecMsg && editMode"
-                      severity="info"
-                      >Image is not saved until clicked
-                      <i class="pi pi-arrow-up"></i
-                    ></InlineMessage>
-                    <InlineMessage v-if="ifSavedSecMsg" severity="success"
-                      >Saved Image!</InlineMessage
-                    >
-                  </div>
-                </template>
-              </Avatar>
+            <div class="w-fit mx-auto rounded-lg">
+              <ImageView :url="apl?.aplImg_path.secPath![0]" />
             </div>
 
             <div
@@ -1375,7 +1230,7 @@ _.forEach(request.value, (value, key) => {
                 <div>
                   <label for="ln">Last Name:</label>
                   <input
-                    v-model="slastName"
+                    v-model="apl!.slastName"
                     required
                     id="ln"
                     name="lastName"
@@ -1386,7 +1241,7 @@ _.forEach(request.value, (value, key) => {
                 <div>
                   <label for="fn">First Name:</label>
                   <input
-                    v-model="sfirstName"
+                    v-model="apl!.sfirstName"
                     required
                     id="fn"
                     type="text"
@@ -1397,7 +1252,7 @@ _.forEach(request.value, (value, key) => {
                 <div>
                   <label for="on">Other Name:</label>
                   <input
-                    v-model="sotherName"
+                    v-model="apl!.sotherName"
                     id="on"
                     type="text"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1411,7 +1266,7 @@ _.forEach(request.value, (value, key) => {
                 <label>Date of Birth:</label>
                 <section>
                   <input
-                    v-model="sdob_day"
+                    v-model="apl!.sdob_day"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     max="31"
@@ -1419,7 +1274,7 @@ _.forEach(request.value, (value, key) => {
                     maxlength="2"
                   />
                   <input
-                    v-model="sdob_month"
+                    v-model="apl!.sdob_month"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1"
@@ -1427,7 +1282,7 @@ _.forEach(request.value, (value, key) => {
                     maxlength="2"
                   />
                   <input
-                    v-model="sdob_year"
+                    v-model="apl!.sdob_year"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1950"
@@ -1444,7 +1299,7 @@ _.forEach(request.value, (value, key) => {
                 <select
                   required
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                  v-model="sgender"
+                  v-model="apl!.sgender"
                 >
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
@@ -1458,7 +1313,7 @@ _.forEach(request.value, (value, key) => {
                   id="cityb"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                  v-model="scity_ob"
+                  v-model="apl!.scity_ob"
                 />
               </div>
               <div
@@ -1467,7 +1322,7 @@ _.forEach(request.value, (value, key) => {
                 <label for="counb">Country of Birth:</label>
                 <input
                   id="counb"
-                  v-model="scountry_ob"
+                  v-model="apl!.scountry_ob"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                 />
@@ -1477,10 +1332,12 @@ _.forEach(request.value, (value, key) => {
 
           <div v-if="hasWards" class="wardInfo">
             <WardFormDetails
-              v-for="(ward, i) in wards"
+              v-for="(ward, i) in apl!.wards"
               :index="i"
+              :aplImg_path="apl!.aplImg_path"
               :wardsPath="wardsPath"
               :ward="ward"
+              :apl_id="apl!.apl_id"
               @wardData="wardEmitted"
               @wardStateOff="wardRemoved"
             />
