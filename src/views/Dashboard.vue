@@ -112,7 +112,7 @@ const attrs = ref([
             title-position="left"
             trim-weeks
             color="indigo"
-            class="w-full shadow-xl mt-8 mb-4"
+            class="min-w-full shadow-xl mt-8 mb-4"
           />
           <Card
             class="mb-3 bg-gradient-to-bl from-cyan-100 to-cyan-300"

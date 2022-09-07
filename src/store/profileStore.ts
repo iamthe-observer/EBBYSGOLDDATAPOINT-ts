@@ -67,6 +67,7 @@ export const useProfileStore = defineStore('profile', () => {
         .eq('id', supabase.auth.user()!.id);
       if (error) throw error;
       setProfile(data[0]);
+      return { data, error };
     } catch (err: any) {
       console.trace(err.message);
     }

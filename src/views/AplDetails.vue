@@ -1,54 +1,11 @@
 <script setup lang="ts">
-// const user_id = ref(null);
-// const plastName = ref(null);
-// const pfirstName = ref(null);
-// const potherName = ref(null);
-// const pdob_day = ref(null);
-// const pdob_month = ref(null);
-// const pdob_year = ref(null);
-// const passport_number = ref(null);
-// const ped_day = ref(null);
-// const ped_month = ref(null);
-// const ped_year = ref(null);
-// const pgender = ref(null);
-// const pcity_ob = ref(null);
-// const conf_code = ref(null);
-// const pcountry_ob = ref(null);
-// const email = ref(null);
-// const country_live_today = ref(null);
-// const education_level = ref(null);
-// const pcontact = ref(null);
-// const pother_contact = ref(null);
-// const postal = ref(null);
-// const marital_status = ref(null);
-// const children_number = ref(0);
-// const wards = ref(null);
-// const psocial_media = ref({
-//   twitter: null,
-//   instagram: null,
-//   facebook: null,
-// });
-
-// const slastName = ref(null);
-// const sfirstName = ref(null);
-// const sotherName = ref(null);
-// const sdob_day = ref(null);
-// const sdob_month = ref(null);
-// const sdob_year = ref(null);
-// const sgender = ref(null);
-// const scity_ob = ref(null);
-// const scountry_ob = ref(null);
-// const primePath = ref([]);
-// const secPath = ref([]);
-// const wardsPath = ref([]);
-// const created_at = ref(null);
-
 import { useRoute } from 'vue-router';
-import { ref, onBeforeMount, computed } from 'vue';
+import { ref, reactive, onBeforeMount, computed, ComputedRef } from 'vue';
 import { supabase } from '../supabase/supabase';
 import { useToast } from 'primevue/usetoast';
 import { useApplyImgStore } from '../store/aplImgStore';
 import { useProfileStore } from '../store/profileStore.js';
+import { useRequestStore } from '../store/requestStore';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
@@ -60,6 +17,7 @@ import SpeedDial from 'primevue/speeddial';
 import Avatar from '../components/avatar.vue';
 import FileUpload from 'primevue/fileupload';
 import InlineMessage from 'primevue/inlinemessage';
+import Countries from '../components/countries.vue';
 import { _Null } from '../types/types';
 import {
   Applicant,
@@ -71,24 +29,71 @@ const toast = useToast();
 const loading = ref(false);
 const requestLoading = ref(false);
 const route = useRoute();
-const id = computed(() => route.params.id);
+const id: ComputedRef<string | any> = computed(() => route.params.id);
 
 // const supabase.auth.user().id = supabase.auth.user().id;
 
-const apl = ref<Applicant | null>(null);
+let apl = reactive<Applicant>({
+  created_at: new Date(),
+  apl_id: null,
+  plastName: null,
+  pfirstName: null,
+  potherName: null,
+  pdob_day: null,
+  pdob_month: null,
+  pdob_year: null,
+  pcity_ob: null,
+  pcountry_ob: null,
+  pgender: null,
+  pconf_code: null,
+  pemail: null,
+  ppassport_number: null,
+  passport_ex_day: null,
+  passport_ex_month: null,
+  passport_ex_year: null,
+  pcountry_live_today: null,
+  peducation_level: null,
+  ppostal: null,
+  pmarital_status: 'unmarried',
+  children_number: 0,
+  fullName: null,
+  user_id: supabase.auth.user()!.id,
+  pcontact: null,
+  slastName: null,
+  sfirstName: null,
+  sotherName: null,
+  scity_ob: null,
+  scountry_ob: null,
+  sgender: null,
+  wards: [],
+  sdob_day: null,
+  sdob_month: null,
+  sdob_year: null,
+  totalPayment: 0,
+  passportAvail: false,
+  created_at_date: new Date().toLocaleString().split(',')[0],
+  pother_contact: null,
+  psocial_media: {
+    facebook: null,
+    instagram: null,
+    twitter: null,
+  },
+  aplImg_path: {
+    primePath: [],
+    secPath: [],
+    wardsPath: [],
+  },
+});
 const primePath = computed(() => {
-  return apl.value?.aplImg_path.primePath![0];
+  return apl.aplImg_path.primePath![0];
 });
 const secPath = computed(() => {
-  return apl.value?.aplImg_path.secPath![0];
-});
-const wardsPath = computed(() => {
-  return apl.value?.aplImg_path.wardsPath;
+  return apl.aplImg_path.secPath![0];
 });
 const hasSpouse = ref(false);
 const hasWards = ref(false);
 const request = ref<_Null<string>>(null);
-const requestBody = ref<string | undefined>('');
+const requestBody = ref<string | any>('');
 const isRequested = ref(false);
 const isSavedWardArr = ref<{}[]>([]);
 const editedWards = ref<WardsApplicant[]>([]);
@@ -98,7 +103,6 @@ function toggleEditMode() {
   editMode.value = !editMode.value;
 }
 
-const aplImg_path = ref<{}>([]);
 const primeIMG = ref<any>(null);
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
@@ -118,14 +122,14 @@ const onSelectSec = (evt: any) => {
   secIMG.value = evt.files[0];
   secSRC.value = evt.files[0].objectURL;
 };
-
+// FIXME problem with sending requests
 const primeImage = computed(() => {
   if (primeIMG.value) {
     return primeSRC.value;
   } else {
-    if (apl.value?.aplImg_path.primePath?.length) {
+    if (apl.aplImg_path.primePath?.length) {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
-        apl.value.aplImg_path.primePath![0]
+        apl.aplImg_path.primePath![0]
       }`;
     } else {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
@@ -136,9 +140,9 @@ const secImage = computed(() => {
   if (secIMG.value) {
     return secSRC.value;
   } else {
-    if (apl.value?.aplImg_path.secPath?.length) {
+    if (apl.aplImg_path.secPath?.length) {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
-        apl.value?.aplImg_path.secPath![0]
+        apl.aplImg_path.secPath![0]
       }`;
     } else {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`;
@@ -157,21 +161,19 @@ const saveImgFiles = (e: any, type: string) => {
 };
 
 const full = computed((): string | null => {
-  if (apl.value!.plastName || apl.value!.pfirstName) {
+  if (!apl.plastName || !apl.pfirstName) {
     return null;
   } else {
-    return `${apl.value?.plastName!.toUpperCase().trim()} ${apl.value
-      ?.pfirstName!.toUpperCase()
+    return `${apl.plastName!.toUpperCase().trim()} ${apl
+      .pfirstName!.toUpperCase()
       .trim()}${
-      apl.value!.potherName
-        ? ' ' + apl.value?.potherName!.toUpperCase().trim()
-        : ''
+      apl.potherName ? ' ' + apl.potherName!.toUpperCase().trim() : ''
     }`;
   }
 });
 
 const passportStatusColor = computed(() => {
-  if (apl.value?.passportAvail) return 'success';
+  if (apl.passportAvail) return 'success';
   return 'danger';
 });
 
@@ -192,13 +194,87 @@ const loadApl = async () => {
   loading.value = true;
   try {
     const { data, error } = await supabase
-      .from('applicants')
+      .from<Applicant>('applicants')
       .select('*')
       .eq('apl_id', id.value);
 
     if (error) throw error;
     console.log(data[0]);
-    apl.value = data[0];
+
+    Object.entries(data[0]).forEach(([key, value]) => {
+      if (
+        key === 'pcountry_ob' ||
+        key === 'scountry_ob' ||
+        key === 'pcountry_live_today'
+      ) {
+        apl[key] = useRequestStore().capitalizeFirstLetter(value);
+      }
+
+      if (
+        key === 'peducation_level' ||
+        key === 'pgender' ||
+        key === 'sgender' ||
+        key === 'pmarital_status'
+      ) {
+        if (!value) return;
+        apl[key] = value!.toLowerCase();
+      }
+
+      if (key === 'wards') {
+        data[0][key].forEach(ward => {
+          {
+            Object.entries(ward).forEach(([key, value]) => {
+              if (key === 'wcountry_ob') {
+                ward[key] = useRequestStore().capitalizeFirstLetter(value);
+              }
+            });
+          }
+        });
+      }
+    });
+
+    apl.created_at = data[0].created_at;
+    apl.apl_id = data[0].apl_id;
+    apl.plastName = data[0].plastName;
+    apl.pfirstName = data[0].pfirstName;
+    apl.potherName = data[0].potherName;
+    apl.pdob_day = data[0].pdob_day;
+    apl.pdob_month = data[0].pdob_month;
+    apl.pdob_year = data[0].pdob_year;
+    apl.pcity_ob = data[0].pcity_ob;
+    apl.pcountry_ob = data[0].pcountry_ob;
+    apl.pgender = data[0].pgender;
+    apl.pconf_code = data[0].pconf_code;
+    apl.pemail = data[0].pemail;
+    apl.ppassport_number = data[0].ppassport_number;
+    apl.passport_ex_day = data[0].passport_ex_day;
+    apl.passport_ex_month = data[0].passport_ex_month;
+    apl.passport_ex_year = data[0].passport_ex_year;
+    apl.pcountry_live_today = data[0].pcountry_live_today;
+    apl.peducation_level = data[0].peducation_level;
+    apl.ppostal = data[0].ppostal;
+    apl.pmarital_status = data[0].pmarital_status;
+    apl.children_number = data[0].children_number;
+    apl.fullName = data[0].fullName;
+    apl.user_id = data[0].user_id;
+    apl.pcontact = data[0].pcontact;
+    apl.slastName = data[0].slastName;
+    apl.sfirstName = data[0].sfirstName;
+    apl.sotherName = data[0].sotherName;
+    apl.scity_ob = data[0].scity_ob;
+    apl.scountry_ob = data[0].scountry_ob;
+    apl.sgender = data[0].sgender;
+    apl.wards = data[0].wards;
+    apl.sdob_day = data[0].sdob_day;
+    apl.sdob_month = data[0].sdob_month;
+    apl.sdob_year = data[0].sdob_year;
+    apl.totalPayment = data[0].totalPayment;
+    apl.passportAvail = data[0].passportAvail;
+    apl.created_at_date = data[0].created_at_date;
+    apl.pother_contact = data[0].pother_contact;
+    apl.psocial_media = data[0].psocial_media;
+    apl.aplImg_path = data[0].aplImg_path;
+
     if (data[0].slastName != '' && data[0].slastName != null) {
       hasSpouse.value = true;
     }
@@ -207,9 +283,7 @@ const loadApl = async () => {
       hasWards.value = true;
     }
 
-    let user = useProfileStore().Users.filter(
-      user => user.id === apl.value!.user_id
-    );
+    let user = useProfileStore().Users.filter(user => user.id === apl.user_id);
     userOfApl.value = user[0];
 
     loading.value = false;
@@ -253,45 +327,52 @@ const sendRequest = async () => {
       const { data, error } = await supabase.from('requests').insert([
         {
           reason_body: requestBody.value,
-          apl_id: apl.value!.apl_id,
+          apl_id: apl.apl_id,
           user_id: supabase.auth.user()!.id,
           modify_type: request.value,
+          // modify_apl: apl.value,
           modify_apl: {
-            aplImg_path: apl.value!.aplImg_path,
+            created_at: apl.created_at,
+            apl_id: apl.apl_id,
+            plastName: apl.plastName,
+            pfirstName: apl.pfirstName,
+            potherName: apl.potherName,
+            pdob_day: apl.pdob_day,
+            pdob_month: apl.pdob_month,
+            pdob_year: apl.pdob_year,
+            pcity_ob: apl.pcity_ob,
+            pcountry_ob: apl.pcountry_ob,
+            pgender: apl.pgender,
+            pconf_code: apl.pconf_code,
+            pemail: apl.pemail,
+            ppassport_number: apl.ppassport_number,
+            passport_ex_day: apl.passport_ex_day,
+            passport_ex_month: apl.passport_ex_month,
+            passport_ex_year: apl.passport_ex_year,
+            pcountry_live_today: apl.pcountry_live_today,
+            peducation_level: apl.peducation_level,
+            ppostal: apl.ppostal,
+            pmarital_status: apl.pmarital_status,
+            children_number: apl.children_number,
             fullName: full.value,
-            passportAvail: apl.value!.passportAvail,
-            plastName: apl.value!.plastName?.toUpperCase(),
-            pfirstName: apl.value!.pfirstName?.toUpperCase(),
-            potherName: apl.value!.potherName?.toUpperCase(),
-            pdob_day: apl.value!.pdob_day,
-            pdob_month: apl.value!.pdob_month,
-            pdob_year: apl.value!.pdob_year,
-            pgender: apl.value!.pgender?.toUpperCase(),
-            pcity_ob: apl.value!.pcity_ob?.toUpperCase(),
-            pcountry_ob: apl.value!.pcountry_ob?.toUpperCase(),
-            ppassport_number: apl.value!.ppassport_number,
-            passport_ex_day: apl.value!.passport_ex_day,
-            passport_ex_month: apl.value!.passport_ex_month,
-            passport_ex_year: apl.value!.passport_ex_year,
-            pemail: apl.value!.pemail,
-            peducation_level: apl.value!.peducation_level?.toUpperCase(),
-            pcontact: apl.value!.pcontact,
-            pother_contact: apl.value!.pother_contact,
-            ppostal: apl.value!.ppostal?.toUpperCase(),
-            pcountry_live_today: apl.value!.pcountry_live_today?.toUpperCase(),
-            pmarital_status: apl.value!.pmarital_status?.toUpperCase(),
-            children_number: apl.value!.children_number,
-            slastName: apl.value!.slastName?.toUpperCase(),
-            sfirstName: apl.value!.sfirstName?.toUpperCase(),
-            sotherName: apl.value!.sotherName?.toUpperCase(),
-            sdob_day: apl.value!.sdob_day,
-            sdob_month: apl.value!.sdob_month,
-            sdob_year: apl.value!.sdob_year,
-            sgender: apl.value!.sgender?.toUpperCase(),
-            scity_ob: apl.value!.scity_ob?.toUpperCase(),
-            scountry_ob: apl.value!.scountry_ob?.toUpperCase(),
-            wards: editedWards.value,
-            psocial_media: apl.value!.psocial_media,
+            user_id: apl.user_id,
+            pcontact: apl.pcontact,
+            slastName: apl.slastName,
+            sfirstName: apl.sfirstName,
+            sotherName: apl.sotherName,
+            scity_ob: apl.scity_ob,
+            scountry_ob: apl.scountry_ob,
+            sgender: apl.sgender,
+            wards: apl.wards,
+            sdob_day: apl.sdob_day,
+            sdob_month: apl.sdob_month,
+            sdob_year: apl.sdob_year,
+            totalPayment: apl.totalPayment,
+            passportAvail: apl.passportAvail,
+            created_at_date: apl.created_at_date,
+            pother_contact: apl.pother_contact,
+            psocial_media: apl.psocial_media,
+            aplImg_path: apl.aplImg_path,
           },
         },
       ]);
@@ -315,10 +396,10 @@ const sendRequest = async () => {
           modify_type: request.value,
           modify_apl: {
             aplImg_path: {
-              primePath: apl.value?.aplImg_path.primePath,
+              primePath: apl.aplImg_path.primePath,
             },
-            fullName: full.value,
-            pfirstName: apl.value!.pfirstName?.toUpperCase(),
+            fullName: apl.fullName,
+            pfirstName: apl.pfirstName?.toUpperCase(),
           },
         },
       ]);
@@ -345,9 +426,9 @@ const openModal = (e: 'edit' | 'delete') => {
 
 const isSavedWard = computed(() => {
   if (
-    isSavedWardArr.value.length === Number(apl.value!.children_number) &&
-    apl.value!.plastName!.trim() !== '' &&
-    apl.value!.pfirstName!.trim() !== ''
+    isSavedWardArr.value.length === Number(apl.children_number) &&
+    apl.plastName!.trim() !== '' &&
+    apl.pfirstName!.trim() !== ''
   ) {
     return true;
   } else {
@@ -442,7 +523,7 @@ const getConf_code = async () => {
       .select('pconf_code')
       .eq('apl_id', id.value);
     if (error) throw error;
-    apl.value!.pconf_code = data[0].pconf_code;
+    apl.pconf_code = data[0].pconf_code;
   } catch (error) {
     console.log(error);
   }
@@ -484,11 +565,13 @@ async function handleAplImgUpdate(
     const newPath = await useApplyImgStore().uploadAplImg(id, file);
     console.log(newPath);
     await useApplyImgStore().updateAplPath(
-      apl.value!.aplImg_path,
+      apl.aplImg_path,
       newPath,
-      apl.value?.apl_id,
+      apl.apl_id,
       type
     );
+
+    loadApl();
   } else {
     await useApplyImgStore().updateSingleAplImg(path);
   }
@@ -501,9 +584,7 @@ async function handleAplImgUpdate(
 }
 
 const getUser4Apl = computed(() => {
-  let user = useProfileStore().Users.filter(
-    user => user.id === apl.value!.user_id
-  );
+  let user = useProfileStore().Users.filter(user => user.id === apl.user_id);
   return user[0];
 });
 </script>
@@ -712,13 +793,22 @@ const getUser4Apl = computed(() => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC"
             >
               <label for="counb">Country of Birth:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="apl!.pcountry_ob"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 id="counb"
                 v-model="apl!.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
 
             <div
@@ -840,13 +930,22 @@ const getUser4Apl = computed(() => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC"
             >
               <label for="cwylt">Country where You live today:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="apl!.pcountry_live_today"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 v-model="apl!.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
 
             <div
@@ -1104,15 +1203,24 @@ const getUser4Apl = computed(() => {
                 />
               </div>
               <div
-                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC aCname"
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC aCchild"
               >
                 <label for="counb">Country of Birth:</label>
-                <input
+                <select
+                  required
+                  id="counb"
+                  v-model="apl!.scountry_ob"
+                  class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+                >
+                  <Countries />
+                </select>
+
+                <!-- <input
                   id="counb"
                   v-model="apl!.scountry_ob"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                />
+                /> -->
               </div>
             </div>
           </div>
@@ -1121,10 +1229,9 @@ const getUser4Apl = computed(() => {
             <WardFormDetails
               v-for="(ward, i) in apl!.wards"
               :index="i"
-              :aplImg_path="apl?.aplImg_path"
-              :wardsPath="wardsPath"
               :ward="ward"
-              :apl_id="apl?.apl_id"
+              :apl="apl"
+              :is_request="false"
               @wardData="wardEmitted"
               @wardStateOff="wardRemoved"
             />
@@ -1249,3 +1356,27 @@ const getUser4Apl = computed(() => {
     </div>
   </div>
 </template>
+
+<!-- modify_apl: { aplImg_path: apl.value!.aplImg_path, fullName: full.value,
+passportAvail: apl.value!.passportAvail, plastName:
+apl.value!.plastName?.toUpperCase(), pfirstName:
+apl.value!.pfirstName?.toUpperCase(), potherName:
+apl.value!.potherName?.toUpperCase(), pdob_day: apl.value!.pdob_day, pdob_month:
+apl.value!.pdob_month, pdob_year: apl.value!.pdob_year, pgender:
+apl.value!.pgender?.toUpperCase(), pcity_ob: apl.value!.pcity_ob?.toUpperCase(),
+pcountry_ob: apl.value!.pcountry_ob?.toUpperCase(), ppassport_number:
+apl.value!.ppassport_number, passport_ex_day: apl.value!.passport_ex_day,
+passport_ex_month: apl.value!.passport_ex_month, passport_ex_year:
+apl.value!.passport_ex_year, pemail: apl.value!.pemail, peducation_level:
+apl.value!.peducation_level?.toUpperCase(), pcontact: apl.value!.pcontact,
+pother_contact: apl.value!.pother_contact, ppostal:
+apl.value!.ppostal?.toUpperCase(), pcountry_live_today:
+apl.value!.pcountry_live_today?.toUpperCase(), pmarital_status:
+apl.value!.pmarital_status?.toUpperCase(), children_number:
+apl.value!.children_number, slastName: apl.value!.slastName?.toUpperCase(),
+sfirstName: apl.value!.sfirstName?.toUpperCase(), sotherName:
+apl.value!.sotherName?.toUpperCase(), sdob_day: apl.value!.sdob_day, sdob_month:
+apl.value!.sdob_month, sdob_year: apl.value!.sdob_year, sgender:
+apl.value!.sgender?.toUpperCase(), scity_ob: apl.value!.scity_ob?.toUpperCase(),
+scountry_ob: apl.value!.scountry_ob?.toUpperCase(), wards: editedWards.value,
+psocial_media: apl.value!.psocial_media, }, -->

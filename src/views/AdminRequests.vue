@@ -156,7 +156,7 @@ const avatarSrc = (path: string) => {
         >
           Review Requests
         </h1>
-        <table class="table w-full" v-if="requests.length > 0">
+        <table class="table w-full" v-if="requests!.length > 0">
           <!-- head -->
           <thead>
             <tr>
@@ -265,7 +265,7 @@ const avatarSrc = (path: string) => {
         </table>
         <div
           class="w-full min-h-full grid place-items-center font-bold text-[2.5em]"
-          v-if="requests.length == 0"
+          v-if="requests!.length == 0"
         >
           <span> No Requests Yet! </span>
         </div>
@@ -273,5 +273,3 @@ const avatarSrc = (path: string) => {
     </div>
   </div>
 </template>
-
-<!-- TODO use tooltip for viewing full request body -->

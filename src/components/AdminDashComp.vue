@@ -45,7 +45,7 @@ onBeforeMount(() => {
 });
 
 const pendingRequests = computed(() => {
-  return requests.value.filter(req => req.status === 'pending');
+  return requests.value!.filter(req => req.status === 'pending');
 });
 
 const totalNumUsers = computed(() => {

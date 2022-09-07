@@ -22,6 +22,7 @@ import Toast from 'primevue/toast';
 import _ from 'lodash';
 import { useRequestStore } from '../store/requestStore';
 import ImageView from '../components/imgView.vue';
+import Countries from '../components/countries.vue';
 import {
   ProfileData,
   Applicant,
@@ -29,24 +30,24 @@ import {
   WardsApplicant,
 } from '../interfaces/interfaces';
 
+const toast = useToast();
+const loading = ref<boolean>(false);
+const route = useRoute();
+const id = computed(() => route.params.id);
+const { curr_request } = storeToRefs(useRequestStore());
+const viewed_request = ref(curr_request.value);
+console.log(viewed_request.value);
+
+const modified_apl = computed(() => {
+  return curr_request.value!.modify_apl;
+});
+
 onBeforeMount(() => {
   useRequestStore().setViewRequestForWardImageDisplay(true);
 });
 
 onBeforeUnmount(() => {
   useRequestStore().setViewRequestForWardImageDisplay(false);
-});
-
-const toast = useToast();
-const loading = ref<boolean>(false);
-const route = useRoute();
-const id = computed(() => route.params.id);
-const { curr_request } = storeToRefs(useRequestStore());
-const modified_apl = computed(() => {
-  return curr_request.value!.modify_apl;
-});
-const m_education_level = computed(() => {
-  return curr_request.value?.modify_apl.peducation_level!.toLowerCase();
 });
 
 async function handleApprove(request: Requests | null) {
@@ -139,7 +140,7 @@ async function handleReject(request: Requests | null) {
     toast.add({
       severity: 'success',
       summary: `${request!.modify_apl.fullName}'s request has been approved.`,
-      detail: 'Deleted Applicant.',
+      detail: 'Rejected Applicant.',
       life: 2000,
     });
 
@@ -211,48 +212,6 @@ let apl = reactive<Applicant>({
   },
 });
 
-// const user_id = ref(null);
-// const plastName = ref(null);
-// const pfirstName = ref(null);
-// const potherName = ref(null);
-// const pdob_day = ref(null);
-// const pdob_month = ref(null);
-// const pdob_year = ref(null);
-// const passport_number = ref(null);
-// const ped_day = ref(null);
-// const ped_month = ref(null);
-// const ped_year = ref(null);
-// const pgender = ref(null);
-// const pcity_ob = ref(null);
-// const conf_code = ref(null);
-// const pcountry_ob = ref(null);
-// const email = ref(null);
-// const country_live_today = ref(null);
-// const education_level = ref(null);
-// const pcontact = ref(null);
-// const pother_contact = ref(null);
-// const postal = ref(null);
-// const marital_status = ref(null);
-// const children_number = ref(0);
-// const wards = ref(null);
-// const psocial_media = ref({
-//   twitter: null,
-//   instagram: null,
-//   facebook: null,
-// });
-
-// const slastName = ref(null);
-// const sfirstName = ref(null);
-// const sotherName = ref(null);
-// const sdob_day = ref(null);
-// const sdob_month = ref(null);
-// const sdob_year = ref(null);
-// const sgender = ref(null);
-// const scity_ob = ref(null);
-// const scountry_ob = ref(null);
-const primePath = ref([]);
-const secPath = ref([]);
-const wardsPath = ref([]);
 // const created_at = ref(null);
 
 const hasSpouse = ref(false);
@@ -273,9 +232,9 @@ const primeIMG = ref<any>(null);
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
 const imgUploading = ref(false);
-const primeSRC = ref<string | null>(null);
+const primeSRC = ref<string>('');
 const secIMG = ref<any>(null);
-const secSRC = ref<string | null>(null);
+const secSRC = ref<string>('');
 
 const onSelectPrime = (evt: any) => {
   ifSavedPrimeMsg.value = false;
@@ -344,6 +303,10 @@ const passportStatusColor = computed(() => {
   if (apl!.passportAvail) return 'success';
   return 'danger';
 });
+const m_passportStatusColor = computed(() => {
+  if (modified_apl.value.passportAvail) return 'success';
+  return 'danger';
+});
 
 const wardEmitted = (e: WardsApplicant) => {
   editedWards.value.push(e);
@@ -377,7 +340,50 @@ const loadApl = async () => {
 
     if (error) throw error;
     console.log(data[0]);
-    apl = data[0];
+    console.log(curr_request.value);
+
+    apl.created_at = data[0].created_at;
+    apl.apl_id = data[0].apl_id;
+    apl.plastName = data[0].plastName;
+    apl.pfirstName = data[0].pfirstName;
+    apl.potherName = data[0].potherName;
+    apl.pdob_day = data[0].pdob_day;
+    apl.pdob_month = data[0].pdob_month;
+    apl.pdob_year = data[0].pdob_year;
+    apl.pcity_ob = data[0].pcity_ob;
+    apl.pcountry_ob = data[0].pcountry_ob;
+    apl.pgender = data[0].pgender;
+    apl.pconf_code = data[0].pconf_code;
+    apl.pemail = data[0].pemail;
+    apl.ppassport_number = data[0].ppassport_number;
+    apl.passport_ex_day = data[0].passport_ex_day;
+    apl.passport_ex_month = data[0].passport_ex_month;
+    apl.passport_ex_year = data[0].passport_ex_year;
+    apl.pcountry_live_today = data[0].pcountry_live_today;
+    apl.peducation_level = data[0].peducation_level;
+    apl.ppostal = data[0].ppostal;
+    apl.pmarital_status = data[0].pmarital_status;
+    apl.children_number = data[0].children_number;
+    apl.fullName = data[0].fullName;
+    apl.user_id = data[0].user_id;
+    apl.pcontact = data[0].pcontact;
+    apl.slastName = data[0].slastName;
+    apl.sfirstName = data[0].sfirstName;
+    apl.sotherName = data[0].sotherName;
+    apl.scity_ob = data[0].scity_ob;
+    apl.scountry_ob = data[0].scountry_ob;
+    apl.sgender = data[0].sgender;
+    apl.wards = data[0].wards;
+    apl.sdob_day = data[0].sdob_day;
+    apl.sdob_month = data[0].sdob_month;
+    apl.sdob_year = data[0].sdob_year;
+    apl.totalPayment = data[0].totalPayment;
+    apl.passportAvail = data[0].passportAvail;
+    apl.created_at_date = data[0].created_at_date;
+    apl.pother_contact = data[0].pother_contact;
+    apl.psocial_media = data[0].psocial_media;
+    apl.aplImg_path = data[0].aplImg_path;
+
     if (data[0].slastName != '' && data[0].slastName != null) {
       hasSpouse.value = true;
     }
@@ -444,13 +450,6 @@ const showToast = (
   });
 };
 
-const isConf_code = ref(false);
-const newConf_code = ref(null);
-const confloading = ref(false);
-const openConfModal = () => {
-  isConf_code.value = !isConf_code.value;
-};
-
 let imageUpdateLoading = ref(false);
 
 const getUser4Apl = computed(() => {
@@ -458,11 +457,18 @@ const getUser4Apl = computed(() => {
   return user[0];
 });
 
-// const getComparedModifiedApl = () => {
-_.forEach(request.value, (value, key) => {
-  console.log({ key: value });
-});
+// // const getComparedModifiedApl = () => {
+// _.forEach(request.value, (value, key) => {
+//   console.log({ key: value });
+// });
 // };
+
+const lowecaseMaritalStatus = computed(() => {
+  return modified_apl.value.pmarital_status?.toLowerCase();
+});
+const lowecaseLvlOfEdu = computed(() => {
+  return modified_apl.value.peducation_level?.toLowerCase();
+});
 </script>
 
 <template>
@@ -483,7 +489,11 @@ _.forEach(request.value, (value, key) => {
         <h1
           class="text-center bg-gradient-to-br from-cyan-300 to-lime-300 text-[1.5rem] font-bold mt-10 mx-auto text-white px-4 py-2 rounded-xl normal-case after:absolute after:px-[10px] after:bg-teal-400 after:rounded-full after:text-center after:text-[0.5em] after:right-[20px] after:text-slate-50 after:top-[-10px] after:font-extrabold after:content-['Reason_To_Modify'] after:shadow-xl relative"
         >
-          {{ curr_request?.reason_body!.toLowerCase() }}
+          {{
+            curr_request?.reason_body
+              ? curr_request?.reason_body!.toLowerCase()
+              : "'No reason given.'"
+          }}
         </h1>
 
         <h2
@@ -513,9 +523,7 @@ _.forEach(request.value, (value, key) => {
             Primary Applicant
           </div>
           <div class="w-fit mx-auto rounded-lg">
-            <ImageView
-              :url="curr_request?.modify_apl.aplImg_path.primePath![0]"
-            />
+            <ImageView :url="primeImage" />
           </div>
           <div
             class="grid grid-cols-3 relative mb-[50px] after:absolute after:px-[10px] after:bg-teal-400 after:rounded-full after:text-center after:text-[0.7em] after:left-[40px] after:text-slate-50 after:top-[-3px] after:font-extrabold after:content-['Main_Information'] after:shadow-xl"
@@ -640,8 +648,8 @@ _.forEach(request.value, (value, key) => {
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
                 v-model="apl!.pgender"
               >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
             </div>
             <div
@@ -701,8 +709,8 @@ _.forEach(request.value, (value, key) => {
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
                 v-model="modified_apl.pgender"
               >
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
             </div>
             <div
@@ -735,13 +743,22 @@ _.forEach(request.value, (value, key) => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC"
             >
               <label for="counb">Country of Birth:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="apl!.pcountry_ob"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 id="counb"
                 v-model="apl!.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
 
             <div
@@ -761,13 +778,22 @@ _.forEach(request.value, (value, key) => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aC mb-10"
             >
               <label for="counb">Country of Birth:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="modified_apl.pcountry_ob"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 id="counb"
                 v-model="modified_apl.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
 
             <div
@@ -905,7 +931,7 @@ _.forEach(request.value, (value, key) => {
                   :value="
                     modified_apl.passportAvail ? 'Available' : 'Unavailable'
                   "
-                  :severity="passportStatusColor"
+                  :severity="m_passportStatusColor"
                 ></Tag
               ></label>
               <div class="flex w-full gap-[20px] items-center justify-evenly">
@@ -978,13 +1004,22 @@ _.forEach(request.value, (value, key) => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC"
             >
               <label for="cwylt">Country where You live today:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="apl!.pcountry_ob"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 v-model="apl!.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
             <!-- modified section -->
             <div
@@ -1002,13 +1037,22 @@ _.forEach(request.value, (value, key) => {
               class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 mb-10 to-cyan-500 aC"
             >
               <label for="cwylt">Country where You live today:</label>
-              <input
+              <select
+                required
+                id="counb"
+                v-model="modified_apl.pcountry_live_today"
+                class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+              >
+                <Countries />
+              </select>
+
+              <!-- <input
                 required
                 v-model="modified_apl.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-              />
+              /> -->
             </div>
             <!-- . -->
             <div
@@ -1093,7 +1137,7 @@ _.forEach(request.value, (value, key) => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="apl!.pmarital_status"
+                v-model="lowecaseMaritalStatus"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="unmarried">Unmarried</option>
@@ -1110,7 +1154,7 @@ _.forEach(request.value, (value, key) => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="apl!.peducation_level"
+                v-model="lowecaseLvlOfEdu"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1157,11 +1201,11 @@ _.forEach(request.value, (value, key) => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="m_education_level"
+                v-model="modified_apl.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
-                <option value="high scohool,no degree">
+                <option value="high school, no degree">
                   High School, No Degree
                 </option>
                 <option value="high school degree">High School Degree</option>
@@ -1218,7 +1262,7 @@ _.forEach(request.value, (value, key) => {
             </div>
 
             <div class="w-fit mx-auto rounded-lg">
-              <ImageView :url="apl?.aplImg_path.secPath![0]" />
+              <ImageView :url="secImage" />
             </div>
 
             <div
@@ -1260,6 +1304,45 @@ _.forEach(request.value, (value, key) => {
                   />
                 </div>
               </div>
+
+              <!-- modified -->
+              <div
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aCname mb-10"
+              >
+                <div>
+                  <label for="ln">Last Name:</label>
+                  <input
+                    v-model="modified_apl.slastName"
+                    required
+                    id="ln"
+                    name="lastName"
+                    type="text"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                  />
+                </div>
+                <div>
+                  <label for="fn">First Name:</label>
+                  <input
+                    v-model="modified_apl.sfirstName"
+                    required
+                    id="fn"
+                    type="text"
+                    name="firstName"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                  />
+                </div>
+                <div>
+                  <label for="on">Other Name:</label>
+                  <input
+                    v-model="modified_apl.sotherName"
+                    id="on"
+                    type="text"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                    name="otherName"
+                  />
+                </div>
+              </div>
+
               <div
                 class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aCdob"
               >
@@ -1301,8 +1384,8 @@ _.forEach(request.value, (value, key) => {
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
                   v-model="apl!.sgender"
                 >
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
                 </select>
               </div>
               <div
@@ -1316,16 +1399,106 @@ _.forEach(request.value, (value, key) => {
                   v-model="apl!.scity_ob"
                 />
               </div>
+
+              <!-- modified -->
               <div
-                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC aCname"
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aCdob mb-10"
+              >
+                <label>Date of Birth:</label>
+                <section>
+                  <input
+                    v-model="modified_apl.sdob_day"
+                    type="number"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                    max="31"
+                    min="1"
+                    maxlength="2"
+                  />
+                  <input
+                    v-model="modified_apl.sdob_month"
+                    type="number"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                    min="1"
+                    max="12"
+                    maxlength="2"
+                  />
+                  <input
+                    v-model="modified_apl.sdob_year"
+                    type="number"
+                    class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                    min="1950"
+                    max="2004"
+                    maxlength="4"
+                  />
+                </section>
+              </div>
+              <div
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aC mb-10"
+              >
+                <label for="gen">Gender:</label>
+                <!-- <input v-model="sgender" type="text" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold" /> -->
+                <select
+                  required
+                  class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
+                  v-model="modified_apl.sgender"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </div>
+              <div
+                class="mb-10 text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aC"
+              >
+                <label for="cityb">City of Birth:</label>
+                <input
+                  id="cityb"
+                  type="text"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                  v-model="modified_apl.scity_ob"
+                />
+              </div>
+
+              <div
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 aC aCchild"
               >
                 <label for="counb">Country of Birth:</label>
-                <input
+                <select
+                  required
+                  id="counb"
+                  v-model="apl!.scountry_ob"
+                  class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+                >
+                  <Countries />
+                </select>
+
+                <!-- <input
                   id="counb"
                   v-model="apl!.scountry_ob"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                />
+                /> -->
+              </div>
+
+              <!-- modified -->
+              <div
+                class="text-white p-[20px] m-[10px] border-none rounded-2xl flex text-center shadow-lg bg-gradient-to-br from-green-500 to-cyan-500 aC aCchild"
+              >
+                <label for="counb">Country of Birth:</label>
+                <select
+                  required
+                  id="counb"
+                  v-model="modified_apl.scountry_ob"
+                  class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+                >
+                  <Countries />
+                </select>
+
+                <!-- <input
+                  id="counb"
+                  v-model="modified_apl.scountry_ob"
+                  type="text"
+                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
+                /> -->
               </div>
             </div>
           </div>
@@ -1334,10 +1507,9 @@ _.forEach(request.value, (value, key) => {
             <WardFormDetails
               v-for="(ward, i) in apl!.wards"
               :index="i"
-              :aplImg_path="apl!.aplImg_path"
-              :wardsPath="wardsPath"
+              :apl="apl"
               :ward="ward"
-              :apl_id="apl!.apl_id"
+              :is_request="true"
               @wardData="wardEmitted"
               @wardStateOff="wardRemoved"
             />

@@ -245,8 +245,8 @@ onMounted(() => {
           </h3>
           <div class="flex items-center justify-center gap-3">
             <Chip
-              :label="recent.fullName"
               v-for="(recent, i) in search.recentSearch"
+              :label="recent!.fullName"
               class="cursor-pointer w-fit"
               @click="
                 $router.push({

@@ -112,8 +112,8 @@ export interface ProfileData {
 
 export interface DefaultProfile {
   id: string | undefined | null;
-  full_name: string;
-  username: string;
+  full_name: 'User';
+  username: 'user';
   email: string | undefined | null;
   role: boolean;
 }
@@ -130,8 +130,8 @@ export interface Requests {
 }
 
 export interface SearchParams {
-  fullName: string;
-  apl_id: string;
+  fullName: string | undefined;
+  apl_id: string | undefined;
 }
 
 export interface RegisterInfo {

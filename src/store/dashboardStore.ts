@@ -18,7 +18,7 @@ export const useDashStore = defineStore('dashboard', () => {
   const { role } = storeToRefs(useProfileStore());
   const loading = ref(false);
   const dailyUserSignIns: Ref<interfaces.UserSignIn[]> = ref([]);
-  const version = ref('2.01-alpha');
+  const version = ref('2.5.4-beta');
 
   let startNum = ref(0);
   let endNum = ref(9);

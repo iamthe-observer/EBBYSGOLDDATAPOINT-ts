@@ -9,46 +9,33 @@ import { useToast } from 'primevue/usetoast';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
 import { computed } from '@vue/reactivity';
-import { WardsApplicant } from '../interfaces/interfaces';
+import { Applicant, WardsApplicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
 import { useRequestStore } from '../store/requestStore';
 import { storeToRefs } from 'pinia';
 import ImageView from '../components/imgView.vue';
+import Countries from './countries.vue';
 
 const { viewWardRequestImage } = storeToRefs(useRequestStore());
 const toast = useToast();
 const props = defineProps<{
   index: number;
-  wardsPath: any;
   ward: WardsApplicant;
-  apl_id: _Null<string> | undefined | null;
-  aplImg_path:
-    | {
-        primePath: string[] | null;
-        secPath: string[] | null;
-        wardsPath: string[] | null;
-      }
-    | undefined;
+  apl: Applicant | any;
+  is_request: boolean;
 }>();
-const emit = defineEmits(['wardData', 'wardStateOff']);
-const wardData = ref({
-  wlastName: props.ward.wlastName?.toUpperCase(),
-  wfirstName: props.ward.wfirstName?.toUpperCase(),
-  wotherName: props.ward.wotherName?.toUpperCase(),
-  wdob_day: props.ward.wdob_day,
-  wdob_month: props.ward.wdob_month,
-  wdob_year: props.ward.wdob_year,
-  wgender: props.ward.wgender,
-  wcity_ob: props.ward.wcity_ob?.toUpperCase(),
-  wcountry_ob: props.ward.wcountry_ob?.toUpperCase(),
-  index: props.index,
+const { curr_request } = storeToRefs(useRequestStore());
+
+const modified_apl = computed(() => {
+  return curr_request.value!.modify_apl;
 });
+const emit = defineEmits(['ward', 'wardStateOff']);
 const isSaved = ref(false);
 const checked = ref(false);
 const wardIMG = ref(null);
-const wardSRC = ref<string | null>(null);
+const wardSRC = ref<string>('');
 
-const WARDPATH: string | undefined = props.wardsPath.filter(
+const WARDPATH: string | undefined = props.apl!.aplImg_path.wardsPath!.filter(
   (wardPath: string): boolean => wardPath.includes(`ward${props.index}`)
 )[0];
 const hasWardPath = computed(() => {
@@ -61,12 +48,11 @@ const hasWardPath = computed(() => {
 
 console.log(WARDPATH);
 
-const wardImage = computed((): string | null => {
+const wardImage = computed((): string => {
   if (wardIMG.value) {
     return wardSRC.value;
   } else {
-    if (props.wardsPath.length && hasWardPath.value) {
-      // TODO fix ward pic
+    if (props.apl!.aplImg_path.wardsPath!.length && hasWardPath.value) {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${WARDPATH}`;
     } else {
       return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
@@ -85,7 +71,7 @@ const wardSave = () => {
   if (!checked.value) {
     emit('wardStateOff', props.index);
   } else {
-    emit('wardData', wardData.value);
+    emit('ward', props.ward);
   }
 };
 
@@ -126,9 +112,9 @@ async function handleAplImgUpdate(
     const newPath = await useApplyImgStore().uploadAplImg(id, file);
     console.log(newPath);
     await useApplyImgStore().updateAplPath(
-      props.aplImg_path,
+      props.apl!.aplImg_path,
       newPath,
-      props.apl_id,
+      props.apl!.apl_id,
       type
     );
   } else {
@@ -168,10 +154,7 @@ async function handleAplImgUpdate(
     </div>
     <div class="w-fit mx-auto">
       <slot name="imageView">
-        <ImageView
-          v-if="viewWardRequestImage"
-          :url="wardsPath ? wardsPath[index] : ''"
-        />
+        <ImageView v-if="viewWardRequestImage" :url="wardImage" />
         <Avatar
           v-else
           class="my-3 mb-0"
@@ -198,7 +181,7 @@ async function handleAplImgUpdate(
                         pi-upload"
                 @click="
                   handleAplImgUpdate(
-                    apl_id,
+                    apl!.apl_id,
                     WARDPATH,
                     hasWardPath,
                     `ward${index}`,
@@ -231,7 +214,7 @@ async function handleAplImgUpdate(
           <input
             data-wardInput
             required
-            v-model="wardData.wlastName"
+            v-model="ward.wlastName"
             id="ln"
             name="lastName"
             type="text"
@@ -243,7 +226,7 @@ async function handleAplImgUpdate(
           <input
             data-wardInput
             required
-            v-model="wardData.wfirstName"
+            v-model="ward.wfirstName"
             id="fn"
             type="text"
             name="firstName"
@@ -255,7 +238,7 @@ async function handleAplImgUpdate(
           <input
             data-wardInput
             required
-            v-model="wardData.wotherName"
+            v-model="ward.wotherName"
             id="on"
             type="text"
             class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
@@ -263,17 +246,61 @@ async function handleAplImgUpdate(
           />
         </div>
       </div>
+
+      <!-- modified -->
+      <div
+        v-if="is_request"
+        class="bg-gradient-to-br from-green-500 to-cyan-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aCname"
+      >
+        <div>
+          <label for="ln">Last Name:</label>
+          <input
+            data-wardInput
+            required
+            v-model="modified_apl.wards[index].wlastName"
+            id="ln"
+            name="lastName"
+            type="text"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
+          />
+        </div>
+        <div>
+          <label for="fn">First Name:</label>
+          <input
+            data-wardInput
+            required
+            v-model="modified_apl.wards[index].wfirstName"
+            id="fn"
+            type="text"
+            name="firstName"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
+          />
+        </div>
+        <div>
+          <label for="on">Other Name:</label>
+          <input
+            data-wardInput
+            required
+            v-model="modified_apl.wards[index].wotherName"
+            id="on"
+            type="text"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
+            name="otherName"
+          />
+        </div>
+      </div>
+
       <div
         class="bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC aCdob"
       >
         <label>Date of Birth:</label>
-        <!-- <input type="date" v-model="wardData.wdob" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center" /> -->
+        <!-- <input type="date" v-model="ward.wdob" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center" /> -->
 
         <section>
           <input
             data-wardInput
             required
-            v-model="wardData.wdob_day"
+            v-model="ward.wdob_day"
             type="number"
             class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
             min="1"
@@ -284,7 +311,7 @@ async function handleAplImgUpdate(
           <input
             required
             data-wardInput
-            v-model="wardData.wdob_month"
+            v-model="ward.wdob_month"
             type="number"
             class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
             min="1"
@@ -295,7 +322,7 @@ async function handleAplImgUpdate(
           <input
             data-wardInput
             required
-            v-model="wardData.wdob_year"
+            v-model="ward.wdob_year"
             type="number"
             class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
             min="1950"
@@ -313,7 +340,7 @@ async function handleAplImgUpdate(
           data-wardSelect
           required
           class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
-          v-model="wardData.wgender"
+          v-model="ward.wgender"
         >
           <option value="male">Male</option>
           <option value="female">Female</option>
@@ -329,26 +356,135 @@ async function handleAplImgUpdate(
           id="cityb"
           type="text"
           class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
-          v-model="wardData.wcity_ob"
+          v-model="ward.wcity_ob"
         />
       </div>
+
+      <!-- modified -->
+      <div
+        v-if="is_request"
+        class="bg-gradient-to-br from-green-500 to-cyan-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC aCdob"
+      >
+        <label>Date of Birth:</label>
+        <!-- <input type="date" v-model="ward.wdob" class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center" /> -->
+
+        <section>
+          <input
+            data-wardInput
+            required
+            v-model="modified_apl.wards[index].wdob_day"
+            type="number"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
+            min="1"
+            max="31"
+            maxlength="2"
+            placeholder="DD"
+          />
+          <input
+            required
+            data-wardInput
+            v-model="modified_apl.wards[index].wdob_month"
+            type="number"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
+            min="1"
+            max="12"
+            maxlength="2"
+            placeholder="MM"
+          />
+          <input
+            data-wardInput
+            required
+            v-model="modified_apl.wards[index].wdob_year"
+            type="number"
+            class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center placeholder:text-center apply-input"
+            min="1950"
+            max="2050"
+            maxlength="4"
+            placeholder="YY"
+          />
+        </section>
+      </div>
+      <div
+        v-if="is_request"
+        class="bg-gradient-to-br from-green-500 to-cyan-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC"
+      >
+        <label for="gen">Gender:</label>
+        <select
+          data-wardSelect
+          required
+          class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+          v-model="modified_apl.wards[index].wgender"
+        >
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+      <div
+        v-if="is_request"
+        class="bg-gradient-to-br from-green-500 to-cyan-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC"
+      >
+        <label for="cityb">City of Birth:</label>
+        <input
+          data-wardInput
+          required
+          id="cityb"
+          type="text"
+          class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
+          v-model="modified_apl.wards[index].wcity_ob"
+        />
+      </div>
+
       <div
         class="bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC aCchild"
       >
         <label for="counb">Country of Birth:</label>
-        <input
+        <select
+          required
+          id="counb"
+          v-model="ward.wcountry_ob"
+          class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+        >
+          <Countries />
+        </select>
+
+        <!-- <input
           data-wardInput
           required
           id="counb"
-          v-model="wardData.wcountry_ob"
+          v-model="ward.wcountry_ob"
           type="text"
           class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
-        />
+        /> -->
+      </div>
+
+      <!-- modified -->
+      <div
+        v-if="is_request"
+        class="bg-gradient-to-br from-green-500 to-cyan-500 text-white shadow-lg p-[20px] m-[10px] border-none rounded-2xl flex text-center aC aCchild"
+      >
+        <label for="counb">Country of Birth:</label>
+        <select
+          required
+          id="counb"
+          v-model="modified_apl.wards[index].wcountry_ob"
+          class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
+        >
+          <Countries />
+        </select>
+
+        <!-- <input
+          data-wardInput
+          required
+          id="counb"
+          v-model="modified_apl.wards[index].wcountry_ob"
+          type="text"
+          class="bg-white font-semibold text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input"
+        /> -->
       </div>
 
       <div class="col-span-3 mx-auto">
         <ToggleButton
-          v-if="!isSaved"
+          v-if="!isSaved && !is_request"
           v-model="checked"
           onLabel="Saved"
           offLabel="Not Saved"
@@ -362,8 +498,7 @@ async function handleAplImgUpdate(
   </div>
 </template>
 
-<!-- FIXME
-  FINALLY FOUND THE ANSWER!
+  <!-- FINALLY FOUND THE ANSWER!
   <template>
   <button @click="$emit('change')">Click Me</button>
 </template>
@@ -376,5 +511,4 @@ async function handleAplImgUpdate(
   const emit = defineEmit(['change', 'delete'])
 
   const { slots, attrs } = useContext()
-</script>
- -->
+</script> -->

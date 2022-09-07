@@ -9,6 +9,7 @@ import {
   onMounted,
   Ref,
 } from 'vue';
+import type { InjectionKey } from 'vue';
 import WardForm from './wardForm.vue';
 import Dialog from 'primevue/dialog';
 import gradientButton from '../components/gradientButton.vue';
@@ -96,25 +97,21 @@ const apl = reactive<Applicant>({
 });
 
 const toast = useToast();
-const full = computed((): string | null => {
-  if (apl!.plastName || apl!.pfirstName) {
-    return null;
-  } else {
+
+const full: ComputedRef<string | undefined> = computed(() => {
+  if (apl.plastName || apl.pfirstName) {
     return `${apl.plastName!.toUpperCase().trim()} ${apl
       .pfirstName!.toUpperCase()
       .trim()}${
-      apl.potherName ? ' ' + apl.potherName.toUpperCase().trim() : ''
+      apl.potherName ? ' ' + apl.potherName!.toUpperCase().trim() : ''
     }`;
   }
 });
-
-// FIXME fullname and totalPayment is messed up... figure out computed properties
 
 onMounted(() => {
   useApplyImgStore().resetFiles();
 });
 
-// const user_id = supabase.auth.user()!.id;
 const apply: Ref<HTMLDivElement | null> = ref(null);
 const loading = ref(false);
 const imgUploading = ref(false);
@@ -126,10 +123,10 @@ const secDisabled = ref(false);
 function toggleEditMode() {
   editMode.value = !editMode.value;
 }
+
 provide('editMode', { editMode, toggleEditMode });
 provide('disabled', disabled);
 
-// const aplImg_path = ref([]);
 const primeIMG = ref(null);
 const primeSRC = ref(null);
 const secIMG = ref(null);
@@ -262,7 +259,7 @@ const renderApl = () => {
     input.classList.add('inputless');
     input.classList.add('text-xl');
     input.classList.remove('text-md');
-    // input.disabled = !input.disabled;
+    input.disabled = !input.disabled;
   }
 };
 

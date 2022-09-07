@@ -69,6 +69,7 @@ const defaultProfile: DefaultProfile = {
   id: supabase.auth.user()!.id,
 };
 
+// TODO on before mount of the dashboard
 onMounted(async () => {
   try {
     let ifProfile = await profileStore.checkForProfile();

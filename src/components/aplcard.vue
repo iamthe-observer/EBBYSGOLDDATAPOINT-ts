@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
+import { Applicant, SearchParams } from '../interfaces/interfaces';
+import { _Null } from '../types/types';
 
-const props = defineProps(['apl']);
+// const props = defineProps(['apl']);
+const props = defineProps<{
+  apl: Applicant;
+}>();
 const options: object = {
   weekday: 'long',
   year: 'numeric',
@@ -9,19 +14,19 @@ const options: object = {
   day: 'numeric',
 };
 
-const placeholderImg = ref(`../assets/images/avatar.svg`);
-const aplImg = computed(() => {
-  return props.apl.aplImg_path.primePath
-    ? `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${props.apl.aplImg_path.primePath[0]}`
-    : `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`;
+const primeImage = computed(() => {
+  if (props.apl.aplImg_path.primePath?.length) {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
+      props.apl.aplImg_path.primePath![0]
+    }`;
+  } else {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
+  }
 });
 
-const rSearchParams = reactive<{
-  fullName: string;
-  apl_id: string;
-}>({
-  fullName: props.apl.fullName,
-  apl_id: props.apl.apl_id,
+const rSearchParams = reactive<SearchParams>({
+  fullName: props.apl.fullName as any,
+  apl_id: props.apl.apl_id as any,
 });
 
 // TODO LEARN GRID: RECENT SEARCHES
@@ -45,7 +50,7 @@ const changeDate = (date: Date) => {
       <img
         alt="apl-image"
         class="rounded-lg aspect-square w-[100px] bg-cover group-hover:outline-4 group-hover:outline-white outline outline-0 outline-white transition-all duration-100 ease-linear"
-        :src="apl.aplImg_path ? aplImg : placeholderImg"
+        :src="primeImage"
       />
       <div class="flex flex-col w-full">
         <p class="text-[1.5em]">{{ apl.fullName }}</p>

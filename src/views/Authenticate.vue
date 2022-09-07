@@ -60,6 +60,7 @@ const rules = computed(() => {
 });
 
 async function loginUser(user: UserDetails) {
+  loading.value = true;
   const v$l = useVuelidate(rules, user);
   let val: any = await v$l.value.$validate();
   console.log(val);
@@ -68,37 +69,34 @@ async function loginUser(user: UserDetails) {
     v$l.value.$errors.forEach(err => {
       alert(err.$message);
     });
-  } else {
-    alert('submitted!');
-    try {
-      let { error } = await supabase.auth.signIn({
-        email: user.email,
-        password: user.password,
-      });
-      if (error) throw error;
-
-      const user_email = supabase.auth.user()!.email!;
-      const adminLoggedIn = adminEmails.value!.filter(
-        user => user_email == user.email
-      );
-      emit('logIn', {
-        val: true,
-        adminLoggedIn: adminLoggedIn[0] ? 'admin' : 'user',
-      });
-      router.push({ name: 'Dashboard' });
-      loading.value = false;
-      return;
-    } catch (err: any) {
-      errMsg.value = err.message;
-      loading.value = false;
-      setTimeout(() => {
-        errMsg.value = '';
-      }, 4000);
-    } finally {
-      loading.value = false;
-    }
   }
-  loading.value = true;
+  try {
+    let { error } = await supabase.auth.signIn({
+      email: user.email,
+      password: user.password,
+    });
+    if (error) throw error;
+
+    const user_email = supabase.auth.user()!.email!;
+    const adminLoggedIn = adminEmails.value!.filter(
+      user => user_email == user.email
+    );
+    emit('logIn', {
+      val: true,
+      adminLoggedIn: adminLoggedIn[0] ? 'admin' : 'user',
+    });
+    router.push({ name: 'Dashboard' });
+    loading.value = false;
+    return;
+  } catch (err: any) {
+    errMsg.value = err.message;
+    loading.value = false;
+    setTimeout(() => {
+      errMsg.value = '';
+    }, 4000);
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 

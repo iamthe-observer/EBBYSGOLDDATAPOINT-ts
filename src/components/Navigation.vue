@@ -74,7 +74,7 @@ const handleLogout = () => {
             class="w-15 rounded-full aspect-square border-2 animate__animated animate__fadeIn"
           />
         </section>
-        <span :class="user_role">{{ username }}</span>
+        <span :class="user_role">{{ username ? username : 'User' }}</span>
       </div>
       <div
         ref="dashboard"

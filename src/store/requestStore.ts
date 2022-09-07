@@ -7,7 +7,7 @@ import { Applicant, Requests } from '../interfaces/interfaces';
 
 export const useRequestStore = defineStore('requests', () => {
   const loading = ref(false);
-  const requests: Ref<Requests[]> = ref([]);
+  const requests: Ref<Requests[] | null> = ref([]);
   const isRequestOpen = ref(false);
   const currentRequest: Ref<Requests | null> = ref(null);
   const { role } = storeToRefs(useProfileStore());
@@ -38,47 +38,121 @@ export const useRequestStore = defineStore('requests', () => {
   };
 
   const isRequest = computed<boolean>(() => {
-    if (requests.value.length == 0) {
+    if (requests.value!.length == 0) {
       return false;
     } else {
       return true;
     }
   });
 
+  function capitalizeFirstLetter(string: string) {
+    let lowered = string!.toLowerCase();
+    return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+  }
+
   const getRequests = async () => {
     loading.value = true;
     if (!role.value) {
+      // user requests
       try {
         const { data, error } = await supabase
           .from('requests')
           .select('*')
           .eq('user_id', supabase.auth.user()!.id);
         if (error) throw error;
-        requests.value = data;
-
-        // requests.value = data!.sort(
-        // (a: any, b: any) => new Date(b.created_at) - new Date(a.created_at)
-        // );
-        loading.value = false;
         console.log(data);
-        console.log(role.value);
 
-        return data;
+        requests.value = data.reverse();
+
+        requests.value.forEach((request: Requests) => {
+          if (request.modify_type == 'edit') {
+            Object.entries(request.modify_apl).forEach(([key, value]) => {
+              if (
+                key === 'pcountry_ob' ||
+                key === 'scountry_ob' ||
+                key === 'pcountry_live_today'
+              ) {
+                request.modify_apl[key] = capitalizeFirstLetter(value);
+              }
+
+              if (
+                key === 'peducation_level' ||
+                key === 'pgender' ||
+                key === 'sgender' ||
+                key === 'pmarital_status'
+              ) {
+                request.modify_apl[key] = value.toLowerCase();
+              }
+
+              if (key === 'wards') {
+                request.modify_apl[key].forEach(ward => {
+                  {
+                    Object.entries(ward).forEach(([key, value]) => {
+                      if (key === 'wcountry_ob') {
+                        ward[key] = capitalizeFirstLetter(value);
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+
+        console.log(requests.value);
       } catch (err: any) {
         loading.value = false;
         console.log(err.message);
+      } finally {
+        loading.value = false;
+        console.log(role.value);
       }
     } else {
+      // admin requests
       try {
         loading.value = true;
         const { data, error } = await supabase.from('requests').select('*');
         if (error) throw error;
         loading.value = false;
-        requests.value = data;
-        let req = data.map((x: Requests) => x.modify_apl.aplImg_path.primePath);
-        console.log(req);
 
-        // console.log(data);
+        requests.value = data.reverse();
+
+        requests.value.forEach((request: Requests) => {
+          if (request.modify_type == 'edit') {
+            Object.entries(request.modify_apl).forEach(([key, value]) => {
+              if (
+                key === 'pcountry_ob' ||
+                key === 'scountry_ob' ||
+                key === 'pcountry_live_today'
+              ) {
+                request.modify_apl[key] = capitalizeFirstLetter(value);
+              }
+
+              if (
+                key === 'peducation_level' ||
+                key === 'pgender' ||
+                key === 'sgender' ||
+                key === 'pmarital_status'
+              ) {
+                request.modify_apl[key] = value.toLowerCase();
+              }
+
+              if (key === 'wards') {
+                request.modify_apl[key].forEach(ward => {
+                  {
+                    Object.entries(ward).forEach(([key, value]) => {
+                      if (key === 'wcountry_ob') {
+                        ward[key] = capitalizeFirstLetter(value);
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+
+        console.log(requests.value);
 
         return data;
       } catch (err: any) {
@@ -141,5 +215,6 @@ export const useRequestStore = defineStore('requests', () => {
     loading,
     setViewRequestForWardImageDisplay,
     viewWardRequestImage,
+    capitalizeFirstLetter,
   };
 });

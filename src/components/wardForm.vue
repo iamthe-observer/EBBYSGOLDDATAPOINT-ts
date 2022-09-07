@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { reactive, ref, watchEffect, inject } from 'vue';
 import ToggleButton from 'primevue/togglebutton';
 import Avatar from './avatar.vue';
@@ -6,10 +6,17 @@ import FileUpload from 'primevue/fileupload';
 import { useApplyImgStore } from '../store/aplImgStore';
 import InlineMessage from 'primevue/inlinemessage';
 import Countries from './countries.vue';
+import { useToggleState } from '../composables/useToggleState';
 
-const { editMode, toggleEditMode } = inject('editMode');
-const disabled = inject('disabled');
-const props = defineProps(['index', 'readySend', 'isRender']);
+const props = defineProps<{
+  index: number;
+  readySend: boolean;
+  isRender: boolean;
+}>();
+
+const EditMode = useToggleState();
+const disabled = inject<boolean>('disabled', false);
+const imgUploading = inject<boolean>('uploading', false);
 const emit = defineEmits(['wardData', 'wardStateOff']);
 const isSaved = ref(false);
 const checked = ref(false);
@@ -48,15 +55,15 @@ const wardInfo = reactive({
   index: props.index,
 });
 
-const onSelect = evt => {
+const onSelect = (evt: any) => {
   ifSavedWardMsg.value = false;
   wardIMG.value = evt.files[0];
   wardSRC.value = evt.files[0].objectURL;
 };
 
-const saveImgFiles = (e, type = null) => {
+const saveImgFiles = (e: any, type: string) => {
   useApplyImgStore().setFiles(e.files[0], type);
-  toggleEditMode();
+  EditMode.toggleState();
   if (type.includes('ward')) {
     ifSavedWardMsg.value = true;
   }
@@ -74,14 +81,15 @@ const saveImgFiles = (e, type = null) => {
     <div class="w-fit mx-auto">
       <Avatar
         class="my-3 mb-0"
-        :editMode="editMode"
+        :editMode="EditMode.state.value"
         :url="wardSRC"
-        @edit="toggleEditMode"
+        :uploading="imgUploading"
+        @edit="EditMode.toggleState()"
       >
         <template #uploadFile>
           <div class="w-fit mx-auto gap-2 items-center flex flex-col">
             <FileUpload
-              v-if="editMode"
+              v-if="EditMode.state.value"
               :customUpload="true"
               mode="basic"
               accept="image/*"
@@ -89,7 +97,9 @@ const saveImgFiles = (e, type = null) => {
               @uploader="e => saveImgFiles(e, `ward${index}`)"
               :disabled="disabled"
             />
-            <InlineMessage v-if="wardIMG && editMode" severity="info"
+            <InlineMessage
+              v-if="wardIMG && EditMode.state.value"
+              severity="info"
               >Image is not saved until clicked <i class="pi pi-arrow-up"></i
             ></InlineMessage>
             <InlineMessage v-if="ifSavedWardMsg" severity="success"
