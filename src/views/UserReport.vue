@@ -1,11 +1,11 @@
-<!-- <script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ProgressSpinner from 'primevue/progressspinner';
 import ImgView from '../components/imgView.vue';
 
 const route = useRoute();
-const UserData:ComputedRef<{}> = computed(() => JSON.parse(route.params.data));
+const UserData = computed(() => JSON.parse(route.params.data[0]));
 const loading = ref(false);
 
 onMounted(() => {});
@@ -62,4 +62,4 @@ onMounted(() => {});
       </div>
     </div>
   </div>
-</template> -->
+</template>

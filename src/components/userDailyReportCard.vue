@@ -1,20 +1,21 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onBeforeMount, computed } from 'vue';
 import Button from 'primevue/button';
 import Chip from 'primevue/chip';
 import { useUserStore } from '../store/userStore';
 import { useDashStore } from '../store/dashboardStore';
 import { storeToRefs } from 'pinia';
+import { Applicant, ProfileData } from '../interfaces/interfaces';
 
 const props = defineProps(['slotProps']);
-const userApls = ref([]);
+const userApls = ref<Applicant[]>([]);
 const { dailyUserSignIns } = storeToRefs(useDashStore());
 
 const totalUserDailyApls = computed(() => {
   return userApls.value.length;
 });
 
-const ifUserSignedIn = user => {
+const ifUserSignedIn = (user: ProfileData) => {
   return dailyUserSignIns.value.filter(
     x =>
       x.user_id === user.id &&
@@ -22,7 +23,7 @@ const ifUserSignedIn = user => {
   )[0];
 };
 
-const lastSeenUser = user => {
+const lastSeenUser = (user: ProfileData) => {
   let val = ifUserSignedIn(user);
   let hh = new Date(val.created_at).getHours();
   let mm = new Date(val.created_at).getMinutes();
@@ -30,24 +31,24 @@ const lastSeenUser = user => {
   return `Time of Login: ${hh}:${mm}`;
 };
 
-const totalUserDailyAplsAmount = computed(() => {
-  if (userApls.value.length) {
-    let val = []
-      .concat(...userApls.value)
-      .map(apl => apl.totalPayment)
-      .reduce((a, b) => a + b);
+// const totalUserDailyAplsAmount = computed(() => {
+//   if (userApls.value.length) {
+//     let val = []
+//       .concat(...userApls.value)
+//       .map((apl:Applicant) => apl.totalPayment)
+//       .reduce((a, b) => a + b);
 
-    return val;
-  }
-});
+//     return val;
+//   }
+// });
 
-const refresh = async () => {
-  userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
-};
+// const refresh = async () => {
+//   userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
+// };
 
-onBeforeMount(async () => {
-  userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
-});
+// onBeforeMount(async () => {
+//   userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
+// });
 </script>
 
 <template>
@@ -68,13 +69,13 @@ onBeforeMount(async () => {
         {{ slotProps.data.username }}
       </div>
       <div class="flex gap-3 items-center">
-        <Chip
+        <!-- <Chip
           :label="`${
             totalUserDailyAplsAmount ? totalUserDailyAplsAmount : 0
           }.00`"
           icon="pi pi-money-bill"
           class="group-hover:text-white group-hover:bg-gray-400 transition-all duration-200 ease-linear font-Outfit font-bold"
-        />
+        /> -->
         <Chip
           :label="`${totalUserDailyApls} Applicants Done`"
           icon="pi pi-users"
