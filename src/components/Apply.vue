@@ -9,7 +9,6 @@ import {
   onMounted,
   Ref,
 } from 'vue';
-import type { InjectionKey } from 'vue';
 import WardForm from './wardForm.vue';
 import Dialog from 'primevue/dialog';
 import gradientButton from '../components/gradientButton.vue';
@@ -28,6 +27,8 @@ import Button from 'primevue/button';
 import Countries from './countries.vue';
 import { Applicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
+import { required, email } from '@vuelidate/validators';
+import { useVuelidate } from '@vuelidate/core';
 
 const PRICE_PER_APL: number = 20;
 const PRICE_PER_WARD: number = 20;
@@ -94,6 +95,60 @@ const apl = reactive<Applicant>({
     secPath: [],
     wardsPath: [],
   },
+});
+
+const rules = computed(() => {
+  return {
+    created_at: new Date(),
+    apl_id: null,
+    plastName: null,
+    pfirstName: null,
+    potherName: null,
+    pdob_day: null,
+    pdob_month: null,
+    pdob_year: null,
+    pcity_ob: null,
+    pcountry_ob: null,
+    pgender: null,
+    pconf_code: null,
+    pemail: null,
+    ppassport_number: null,
+    passport_ex_day: null,
+    passport_ex_month: null,
+    passport_ex_year: null,
+    pcountry_live_today: null,
+    peducation_level: null,
+    ppostal: null,
+    pmarital_status: 'unmarried',
+    children_number: 0,
+    fullName: null,
+    user_id: supabase.auth.user()!.id,
+    pcontact: null,
+    slastName: null,
+    sfirstName: null,
+    sotherName: null,
+    scity_ob: null,
+    scountry_ob: null,
+    sgender: null,
+    wards: [],
+    sdob_day: null,
+    sdob_month: null,
+    sdob_year: null,
+    totalPayment: 0,
+    passportAvail: false,
+    created_at_date: new Date().toLocaleString().split(',')[0],
+    pother_contact: null,
+    psocial_media: {
+      facebook: null,
+      instagram: null,
+      twitter: null,
+    },
+    aplImg_path: {
+      primePath: [],
+      secPath: [],
+      wardsPath: [],
+    },
+  };
 });
 
 const toast = useToast();

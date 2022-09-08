@@ -39,9 +39,9 @@ const lastSeenUser = (user: ProfileData) => {
 
 const { requests } = storeToRefs(useRequestStore());
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
   useProfileStore().getUsers();
-  useRequestStore().getRequests();
+  await useRequestStore().getRequests();
 });
 
 const pendingRequests = computed(() => {

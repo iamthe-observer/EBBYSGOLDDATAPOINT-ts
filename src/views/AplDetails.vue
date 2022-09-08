@@ -207,6 +207,7 @@ const loadApl = async () => {
         key === 'scountry_ob' ||
         key === 'pcountry_live_today'
       ) {
+        if (!apl[key]) return;
         apl[key] = useRequestStore().capitalizeFirstLetter(value);
       }
 
@@ -216,7 +217,7 @@ const loadApl = async () => {
         key === 'sgender' ||
         key === 'pmarital_status'
       ) {
-        if (!value) return;
+        if (!apl[key]) return;
         apl[key] = value!.toLowerCase();
       }
 
@@ -225,6 +226,7 @@ const loadApl = async () => {
           {
             Object.entries(ward).forEach(([key, value]) => {
               if (key === 'wcountry_ob') {
+                if (!ward[key]) return;
                 ward[key] = useRequestStore().capitalizeFirstLetter(value);
               }
             });
@@ -320,7 +322,6 @@ const changeDate = (date: Date) => {
 };
 
 const sendRequest = async () => {
-  await loadApl();
   if (request.value == 'edit') {
     try {
       requestLoading.value = true;
@@ -630,7 +631,6 @@ const getUser4Apl = computed(() => {
             Primary Applicant
           </div>
           <div class="w-fit mx-auto rounded-lg">
-            <!-- <ImageView :url="primePath ? primePath : ''" /> -->
             <Avatar
               class="my-3 mb-0"
               :editMode="editMode"

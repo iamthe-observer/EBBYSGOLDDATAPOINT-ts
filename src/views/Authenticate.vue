@@ -52,6 +52,8 @@ onBeforeMount(async () => {
   }
 });
 
+// let all variables laod before app loads
+
 const rules = computed(() => {
   return {
     email: { required, email },
@@ -63,12 +65,12 @@ async function loginUser(user: UserDetails) {
   loading.value = true;
   const v$l = useVuelidate(rules, user);
   let val: any = await v$l.value.$validate();
-  console.log(val);
 
   if (!val) {
     v$l.value.$errors.forEach(err => {
       alert(err.$message);
     });
+    loading.value = false;
   }
   try {
     let { error } = await supabase.auth.signIn({

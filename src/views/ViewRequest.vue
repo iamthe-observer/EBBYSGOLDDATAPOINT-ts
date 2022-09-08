@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
+  toRefs,
   ref,
   onMounted,
   computed,
@@ -31,12 +32,11 @@ import {
 } from '../interfaces/interfaces';
 
 const toast = useToast();
+const router = useRouter();
 const loading = ref<boolean>(false);
 const route = useRoute();
 const id = computed(() => route.params.id);
 const { curr_request } = storeToRefs(useRequestStore());
-const viewed_request = ref(curr_request.value);
-console.log(viewed_request.value);
 
 const modified_apl = computed(() => {
   return curr_request.value!.modify_apl;
@@ -72,12 +72,13 @@ async function handleApprove(request: Requests | null) {
       toast.add({
         severity: 'success',
         summary: `${request!.modify_apl.fullName}'s request has been approved.`,
-        detail: 'Edited Applicant.',
+        detail: 'Accepted Edit of Applicant.',
         life: 2000,
       });
 
       setTimeout(() => {
         useRequestStore().getRequests();
+        router.push({ name: 'AdminRequests' });
       }, 2000);
     } catch (err: any) {
       console.log(err);
@@ -109,12 +110,13 @@ async function handleApprove(request: Requests | null) {
       toast.add({
         severity: 'success',
         summary: `${request!.modify_apl.fullName}'s request has been approved.`,
-        detail: 'Deleted Applicant.',
+        detail: 'Accepted Deletion of Applicant.',
         life: 2000,
       });
 
       setTimeout(() => {
         useRequestStore().getRequests();
+        router.push({ name: 'AdminRequests' });
       }, 2000);
     } catch (err: any) {
       console.log(err);
@@ -138,14 +140,15 @@ async function handleReject(request: Requests | null) {
 
     console.log(acceptedRequest, 'rejected');
     toast.add({
-      severity: 'success',
+      severity: 'info',
       summary: `${request!.modify_apl.fullName}'s request has been approved.`,
-      detail: 'Rejected Applicant.',
+      detail: 'Rejected Modification of Applicant.',
       life: 2000,
     });
 
     setTimeout(() => {
       useRequestStore().getRequests();
+      router.push({ name: 'AdminRequests' });
     }, 2000);
   } catch (error: any) {
     console.log(error);
@@ -212,41 +215,22 @@ let apl = reactive<Applicant>({
   },
 });
 
-// const created_at = ref(null);
-
 const hasSpouse = ref(false);
 const hasWards = ref(false);
-const request = ref(null);
-const isRequested = ref(false);
 const isSavedWardArr = ref<{}[]>([]);
 const editedWards = ref<WardsApplicant[]>([]);
-const disabled = ref(false);
 const editMode = ref(false);
 function toggleEditMode() {
   editMode.value = !editMode.value;
 }
 
 const userOfApl = ref<ProfileData | null>(null);
-const aplImg_path = ref([]);
 const primeIMG = ref<any>(null);
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
-const imgUploading = ref(false);
 const primeSRC = ref<string>('');
 const secIMG = ref<any>(null);
 const secSRC = ref<string>('');
-
-const onSelectPrime = (evt: any) => {
-  ifSavedPrimeMsg.value = false;
-  primeIMG.value = evt.files[0];
-  primeSRC.value = evt.files[0].objectURL;
-};
-
-const onSelectSec = (evt: any) => {
-  ifSavedSecMsg.value = false;
-  secIMG.value = evt.files[0];
-  secSRC.value = evt.files[0].objectURL;
-};
 
 const viewRequestDiv = ref(null);
 
@@ -288,13 +272,20 @@ const saveImgFiles = (e: any, type: string) => {
 };
 
 const full = computed((): string | null => {
-  if (apl!.plastName || apl!.pfirstName) {
+  if (
+    curr_request.value!.modify_apl.plastName ||
+    curr_request.value!.modify_apl!.pfirstName
+  ) {
     return null;
   } else {
-    return `${apl?.plastName!.toUpperCase().trim()} ${apl
-      ?.pfirstName!.toUpperCase()
+    return `${curr_request
+      .value!.modify_apl?.plastName!.toUpperCase()
+      .trim()} ${curr_request
+      .value!.modify_apl?.pfirstName!.toUpperCase()
       .trim()}${
-      apl!.potherName ? ' ' + apl?.potherName!.toUpperCase().trim() : ''
+      curr_request.value!.modify_apl!.potherName
+        ? ' ' + curr_request.value!.modify_apl?.potherName.toUpperCase().trim()
+        : ''
     }`;
   }
 });
@@ -312,8 +303,6 @@ const wardEmitted = (e: WardsApplicant) => {
   editedWards.value.push(e);
   isSavedWardArr.value.push({});
 };
-
-console.log(modified_apl.value);
 
 const wardRemoved = (e: number) => {
   isSavedWardArr.value.pop();
@@ -419,55 +408,9 @@ const changeDate = (date: Date) => {
   return day;
 };
 
-const showSuccessConf = () => {
-  toast.add({
-    severity: 'success',
-    summary: `Confirmation Code Updated.`,
-    detail: ``,
-    life: 4000,
-  });
-};
-const showErrorConf = () => {
-  toast.add({
-    severity: 'error',
-    summary: `Confirmation Code Not Updated.`,
-    detail: `The Confirmation Code was not updated! Please check for internet connectivity issues.`,
-    life: 4000,
-  });
-};
-
-const showToast = (
-  severity: string,
-  summary: string,
-  detail: string,
-  life: number = 4000
-) => {
-  toast.add({
-    severity: severity,
-    summary: summary,
-    detail: detail,
-    life: life,
-  });
-};
-
-let imageUpdateLoading = ref(false);
-
 const getUser4Apl = computed(() => {
   let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
   return user[0];
-});
-
-// // const getComparedModifiedApl = () => {
-// _.forEach(request.value, (value, key) => {
-//   console.log({ key: value });
-// });
-// };
-
-const lowecaseMaritalStatus = computed(() => {
-  return modified_apl.value.pmarital_status?.toLowerCase();
-});
-const lowecaseLvlOfEdu = computed(() => {
-  return modified_apl.value.peducation_level?.toLowerCase();
 });
 </script>
 
@@ -574,7 +517,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="ln">Last Name:</label>
                 <input
                   required
-                  v-model="modified_apl.plastName"
+                  v-model="curr_request!.modify_apl.plastName"
                   id="ln"
                   name="lastName"
                   type="text"
@@ -585,7 +528,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="fn">First Name:</label>
                 <input
                   required
-                  v-model="modified_apl.pfirstName"
+                  v-model="curr_request!.modify_apl.pfirstName"
                   id="fn"
                   type="text"
                   name="firstName"
@@ -596,7 +539,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="on">Other Name:</label>
                 <input
                   required
-                  v-model="modified_apl.potherName"
+                  v-model="curr_request!.modify_apl.potherName"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -673,7 +616,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <section>
                 <input
                   required
-                  v-model="modified_apl.pdob_day"
+                  v-model="curr_request!.modify_apl.pdob_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -682,7 +625,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 />
                 <input
                   required
-                  v-model="modified_apl.pdob_month"
+                  v-model="curr_request!.modify_apl.pdob_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -691,7 +634,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 />
                 <input
                   required
-                  v-model="modified_apl.pdob_year"
+                  v-model="curr_request!.modify_apl.pdob_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -707,7 +650,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <select
                 required
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                v-model="modified_apl.pgender"
+                v-model="curr_request!.modify_apl.pgender"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -722,7 +665,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 id="cityb"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                v-model="modified_apl.pcity_ob"
+                v-model="curr_request!.modify_apl.pcity_ob"
               />
             </div>
 
@@ -781,7 +724,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <select
                 required
                 id="counb"
-                v-model="modified_apl.pcountry_ob"
+                v-model="curr_request!.modify_apl.pcountry_ob"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
               >
                 <Countries />
@@ -790,7 +733,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <!-- <input
                 required
                 id="counb"
-                v-model="modified_apl.pcountry_ob"
+                v-model="curr_request!.modify_apl.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
               /> -->
@@ -802,7 +745,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <label for="pn">Phone Number:</label>
               <input
                 required
-                v-model="modified_apl.pcontact"
+                v-model="curr_request!.modify_apl.pcontact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -840,7 +783,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <label for="pn">Next Of Kin Phone Number(s):</label>
               <input
                 required
-                v-model="modified_apl.pother_contact"
+                v-model="curr_request!.modify_apl.pother_contact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -852,7 +795,7 @@ const lowecaseLvlOfEdu = computed(() => {
             >
               <label for="em">Email:</label>
               <input
-                v-model="modified_apl.pemail"
+                v-model="curr_request!.modify_apl.pemail"
                 id="em"
                 type="email"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -929,14 +872,14 @@ const lowecaseLvlOfEdu = computed(() => {
                 <Tag
                   class="h-4"
                   :value="
-                    modified_apl.passportAvail ? 'Available' : 'Unavailable'
+                    curr_request!.modify_apl.passportAvail ? 'Available' : 'Unavailable'
                   "
                   :severity="m_passportStatusColor"
                 ></Tag
               ></label>
               <div class="flex w-full gap-[20px] items-center justify-evenly">
                 <ToggleButton
-                  v-model="modified_apl.passportAvail"
+                  v-model="curr_request!.modify_apl.passportAvail"
                   onIcon="pi pi-check"
                   offIcon="pi pi-times"
                   class="h-8 font-Outfit rounded-xl"
@@ -947,7 +890,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <input
                   id="em"
                   type="text"
-                  v-model="modified_apl.ppassport_number"
+                  v-model="curr_request!.modify_apl.ppassport_number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold uppercase"
                 />
               </div>
@@ -959,7 +902,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <label>Passport Expiration Date:</label>
               <section>
                 <input
-                  v-model="modified_apl.passport_ex_day"
+                  v-model="curr_request!.modify_apl.passport_ex_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -967,7 +910,7 @@ const lowecaseLvlOfEdu = computed(() => {
                   maxlength="2"
                 />
                 <input
-                  v-model="modified_apl.passport_ex_month"
+                  v-model="curr_request!.modify_apl.passport_ex_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -975,7 +918,7 @@ const lowecaseLvlOfEdu = computed(() => {
                   maxlength="2"
                 />
                 <input
-                  v-model="modified_apl.passport_ex_year"
+                  v-model="curr_request!.modify_apl.passport_ex_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -1027,7 +970,7 @@ const lowecaseLvlOfEdu = computed(() => {
             >
               <label for="pa">Postal Address:</label>
               <input
-                v-model="modified_apl.ppostal"
+                v-model="curr_request!.modify_apl.ppostal"
                 id="pa"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1040,7 +983,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <select
                 required
                 id="counb"
-                v-model="modified_apl.pcountry_live_today"
+                v-model="curr_request!.modify_apl.pcountry_live_today"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
               >
                 <Countries />
@@ -1048,7 +991,7 @@ const lowecaseLvlOfEdu = computed(() => {
 
               <!-- <input
                 required
-                v-model="modified_apl.pcountry_live_today"
+                v-model="curr_request!.modify_apl.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1100,7 +1043,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="ln">Facebook:</label>
                 <input
                   required
-                  v-model="modified_apl.psocial_media.facebook"
+                  v-model="curr_request!.modify_apl.psocial_media.facebook"
                   id="ln"
                   name="facebook"
                   type="text"
@@ -1111,7 +1054,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="fn">Instagram:</label>
                 <input
                   required
-                  v-model="modified_apl.psocial_media.instagram"
+                  v-model="curr_request!.modify_apl.psocial_media.instagram"
                   id="fn"
                   type="text"
                   name="instagram"
@@ -1122,7 +1065,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label for="on">Twitter:</label>
                 <input
                   required
-                  v-model="modified_apl.psocial_media.twitter"
+                  v-model="curr_request!.modify_apl.psocial_media.twitter"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -1137,7 +1080,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="lowecaseMaritalStatus"
+                v-model="curr_request!.modify_apl.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="unmarried">Unmarried</option>
@@ -1154,7 +1097,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="lowecaseLvlOfEdu"
+                v-model="curr_request!.modify_apl.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1184,7 +1127,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="modified_apl.pmarital_status"
+                v-model="curr_request!.modify_apl.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="unmarried">Unmarried</option>
@@ -1201,7 +1144,7 @@ const lowecaseLvlOfEdu = computed(() => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="modified_apl.peducation_level"
+                v-model="curr_request!.modify_apl.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1244,7 +1187,7 @@ const lowecaseLvlOfEdu = computed(() => {
             >
               <label for="number-of-children">Number of Children:</label>
               <input
-                v-model="modified_apl.children_number"
+                v-model="curr_request!.modify_apl.children_number"
                 id="number-of-children"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1312,7 +1255,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <div>
                   <label for="ln">Last Name:</label>
                   <input
-                    v-model="modified_apl.slastName"
+                    v-model="curr_request!.modify_apl.slastName"
                     required
                     id="ln"
                     name="lastName"
@@ -1323,7 +1266,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <div>
                   <label for="fn">First Name:</label>
                   <input
-                    v-model="modified_apl.sfirstName"
+                    v-model="curr_request!.modify_apl.sfirstName"
                     required
                     id="fn"
                     type="text"
@@ -1334,7 +1277,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <div>
                   <label for="on">Other Name:</label>
                   <input
-                    v-model="modified_apl.sotherName"
+                    v-model="curr_request!.modify_apl.sotherName"
                     id="on"
                     type="text"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1407,7 +1350,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <label>Date of Birth:</label>
                 <section>
                   <input
-                    v-model="modified_apl.sdob_day"
+                    v-model="curr_request!.modify_apl.sdob_day"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     max="31"
@@ -1415,7 +1358,7 @@ const lowecaseLvlOfEdu = computed(() => {
                     maxlength="2"
                   />
                   <input
-                    v-model="modified_apl.sdob_month"
+                    v-model="curr_request!.modify_apl.sdob_month"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1"
@@ -1423,7 +1366,7 @@ const lowecaseLvlOfEdu = computed(() => {
                     maxlength="2"
                   />
                   <input
-                    v-model="modified_apl.sdob_year"
+                    v-model="curr_request!.modify_apl.sdob_year"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1950"
@@ -1440,7 +1383,7 @@ const lowecaseLvlOfEdu = computed(() => {
                 <select
                   required
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                  v-model="modified_apl.sgender"
+                  v-model="curr_request!.modify_apl.sgender"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -1454,7 +1397,7 @@ const lowecaseLvlOfEdu = computed(() => {
                   id="cityb"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                  v-model="modified_apl.scity_ob"
+                  v-model="curr_request!.modify_apl.scity_ob"
                 />
               </div>
 
@@ -1470,13 +1413,6 @@ const lowecaseLvlOfEdu = computed(() => {
                 >
                   <Countries />
                 </select>
-
-                <!-- <input
-                  id="counb"
-                  v-model="apl!.scountry_ob"
-                  type="text"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                /> -->
               </div>
 
               <!-- modified -->
@@ -1487,18 +1423,11 @@ const lowecaseLvlOfEdu = computed(() => {
                 <select
                   required
                   id="counb"
-                  v-model="modified_apl.scountry_ob"
+                  v-model="curr_request!.modify_apl.scountry_ob"
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
                 >
                   <Countries />
                 </select>
-
-                <!-- <input
-                  id="counb"
-                  v-model="modified_apl.scountry_ob"
-                  type="text"
-                  class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                /> -->
               </div>
             </div>
           </div>

@@ -118,9 +118,6 @@ onBeforeMount(async () => {
   dailySignIn();
 });
 
-// TODO admin dash appears before user dash
-// TODO requests still load everything
-
 const checkDailySignIn = async () => {
   try {
     const { data, error } = await supabase

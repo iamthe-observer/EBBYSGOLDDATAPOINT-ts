@@ -39,6 +39,14 @@ const attrs = ref([
     dates: new Date(),
   },
 ]);
+
+const image = (path: string) => {
+  if (!path) {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
+  } else {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${path}`;
+  }
+};
 </script>
 
 <template>
@@ -213,7 +221,9 @@ const attrs = ref([
                       >
                         <div class="flex gap-3">
                           <img
-                            :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${slotProps.data.aplImg_path.primePath[0]}`"
+                            :src="
+                              image(slotProps.data.aplImg_path.primePath[0])
+                            "
                             class="w-[100px] h-[100px] rounded-lg"
                           />
                           <div
@@ -229,7 +239,9 @@ const attrs = ref([
                               <Chip
                                 v-if="slotProps.data.slastName"
                                 label="Has Spouse"
-                                :image="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${slotProps.data.aplImg_path.secPath[0]}`"
+                                :image="
+                                  image(slotProps.data.aplImg_path.secPath[0])
+                                "
                                 class="mr-2 mb-2 group-hover:text-white group-hover:bg-gray-400 transition-all duration-200 ease-linear font-Outfit"
                               />
                               <Chip

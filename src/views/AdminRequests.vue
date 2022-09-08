@@ -2,8 +2,6 @@
 import { useProfileStore } from '../store/profileStore';
 import { useRequestStore } from '../store/requestStore';
 import { storeToRefs } from 'pinia';
-import Chip from 'primevue/chip';
-import { useDashStore } from '../store/dashboardStore';
 import SplitButton from 'primevue/splitbutton';
 import { supabase } from '../supabase/supabase';
 import { useToast } from 'primevue/usetoast';
@@ -11,13 +9,14 @@ import Toast from 'primevue/toast';
 import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import { Requests } from '../interfaces/interfaces';
+import Chip from 'primevue/chip';
 
 const { requests } = storeToRefs(useRequestStore());
 const { Users } = storeToRefs(useProfileStore());
 const toast = useToast();
 const router = useRouter();
 
-function getUser4AplInfo(request_user_id: string) {
+function getUser4AplInfo(request_user_id: string | undefined) {
   return Users.value.find(user => user.id == request_user_id);
 }
 
@@ -43,7 +42,7 @@ async function handleApprove(request: Requests) {
       toast.add({
         severity: 'success',
         summary: `${request.modify_apl.fullName}'s request has been approved.`,
-        detail: 'Edited Applicant.',
+        detail: 'Accepted Edit of Applicant.',
         life: 2000,
       });
 
@@ -80,7 +79,7 @@ async function handleApprove(request: Requests) {
       toast.add({
         severity: 'success',
         summary: `${request.modify_apl.fullName}'s request has been approved.`,
-        detail: 'Deleted Applicant.',
+        detail: 'Accepted Deletion of Applicant.',
         life: 2000,
       });
 
@@ -108,9 +107,9 @@ async function handleReject(request: Requests) {
 
   console.log(acceptedRequest, 'rejected');
   toast.add({
-    severity: 'success',
+    severity: 'info',
     summary: `${request.modify_apl.fullName}'s request has been approved.`,
-    detail: 'Deleted Applicant.',
+    detail: 'Rejected Modification of Applicant.',
     life: 2000,
   });
 
@@ -119,14 +118,15 @@ async function handleReject(request: Requests) {
   }, 2000);
 }
 
-function handleDeleteRequest(id: string) {
-  useRequestStore().deleteRequest(id);
+async function handleDeleteRequest(id: string) {
+  await useRequestStore().deleteRequest(id);
   toast.add({
     severity: 'success',
-    summary: `Removed Request from list.`,
+    summary: `Removed Request from list😉.`,
     detail: ``,
     life: 2000,
   });
+
   useRequestStore().getRequests();
 }
 
@@ -135,10 +135,20 @@ const handleViewRequest = (request: Requests) => {
   router.push({ name: 'ViewRequest' });
 };
 
-const avatarSrc = (path: string) => {
-  if (!path)
+const avatarSrc = (path: string | undefined) => {
+  if (!path) {
     return 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg';
-  return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${path}`;
+  } else {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${path}`;
+  }
+};
+
+const userAvatarSrc = (path: string | undefined) => {
+  if (!path) {
+    return 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg';
+  } else {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/${path}`;
+  }
 };
 </script>
 
@@ -192,23 +202,16 @@ const avatarSrc = (path: string) => {
                       {{ request.modify_apl.fullName }}
                     </div>
                     <div class="text-sm opacity-50"></div>
-                    <!-- <Chip
+                    <Chip
                       :label="`Applied by ${
                         getUser4AplInfo(request.user_id)!.username
                       }`"
-                      :image="
-                        getUser4AplInfo(request.user_id)!.avatar_url
-                          ? getUser4AplInfo(request.user_id)!.avatar_url
-                          : `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg`
-                      "
-                      class="h-[25px] mr-2 font-bold text-sm my-2 font-Outfit"
-                    /> -->
+                      :image="userAvatarSrc(getUser4AplInfo(request.user_id!)?.avatar_path!)"
+                      class="h-[25px] mr-2 font-extrabold text-sm my-2 font-Outfit"
+                    />
                   </div>
                 </div>
               </td>
-              <!-- <td class="text-ellipsis overflow-hidden max-w-20">
-                {{ request.reason_body }}
-              </td> -->
               <td class="">
                 <div class="min-w-[100px] max-w-[300px] truncate">
                   {{ request.reason_body }}

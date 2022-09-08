@@ -67,8 +67,8 @@ onBeforeMount(() => {
       class="bg-gray-100 flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 font-bold rounded-xl py-3"
     >
       <span
-        ><i v-if="store.loading" class="pi pi-spin pi-spinner" />No
-        Requests</span
+        ><i v-if="store.loading" class="pi pi-spin pi-spinner mr-1" />No
+        Requests requested lol...</span
       >
     </div>
     <teleport to="body">
@@ -96,7 +96,7 @@ onBeforeMount(() => {
             class="w-fit max-w-[30%] h-[300px] flex flex-col p-3 justify-center items-center bg-indigo-50 rounded-md gap-3 font-Outfit text-bold"
           >
             <img
-              :src="store.primePath"
+              :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${store.primePath}`"
               class="w-[100px] h-[100px] rounded-lg outline outline-[rgb(255,255,255)] outline-4"
             />
             <p class="font-bold text-center">

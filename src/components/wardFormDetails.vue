@@ -46,8 +46,6 @@ const hasWardPath = computed(() => {
   }
 });
 
-console.log(WARDPATH);
-
 const wardImage = computed((): string => {
   if (wardIMG.value) {
     return wardSRC.value;
@@ -498,7 +496,7 @@ async function handleAplImgUpdate(
   </div>
 </template>
 
-  <!-- FINALLY FOUND THE ANSWER!
+<!-- FINALLY FOUND THE ANSWER!
   <template>
   <button @click="$emit('change')">Click Me</button>
 </template>
