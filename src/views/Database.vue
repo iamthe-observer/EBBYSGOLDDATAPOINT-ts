@@ -1,16 +1,28 @@
 <script setup lang="ts">
 import SideTab from '../components/SideTab.vue';
-import { shallowRef } from 'vue';
+import { ref, markRaw } from 'vue';
 import Apply from '../components/Apply.vue';
 import Search from '../components/Search.vue';
+import { useStorage } from '@vueuse/core';
+import { computed } from '@vue/reactivity';
+import { storeToRefs } from 'pinia';
+import { useAppStore } from '../store/Appstore';
 
-const currContent = shallowRef(Apply);
+let { content } = storeToRefs(useAppStore());
+
+let current_content = computed(() => {
+  if (content.value == 'apply') {
+    return markRaw(Apply);
+  } else {
+    return markRaw(Search);
+  }
+});
 
 function changeContent(event: string) {
   if (event == 'SEARCH') {
-    currContent.value = Search;
+    content.value = event.toLowerCase();
   } else {
-    currContent.value = Apply;
+    content.value = event.toLowerCase();
   }
 }
 </script>
@@ -19,10 +31,10 @@ function changeContent(event: string) {
   <div
     class="flex-1 p-3 bg-indigo-100 border-none rounded-3xl [max-height:100%] flex gap-3"
   >
-    <SideTab @contentChange="changeContent" />
+    <SideTab :init_content="content!" @contentChange="changeContent" />
     <transition name="fade" mode="out-in">
       <keep-alive>
-        <component :is="currContent" />
+        <component :is="current_content" />
       </keep-alive>
     </transition>
   </div>

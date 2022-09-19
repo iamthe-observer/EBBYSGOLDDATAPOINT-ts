@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Login from './Login.vue';
-import { shallowRef, ref, onBeforeMount, Ref } from 'vue';
+import { shallowRef, ref } from 'vue';
 import { supabase } from '../supabase/supabase';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
@@ -8,8 +8,10 @@ import Toast from 'primevue/toast';
 import { required, email } from '@vuelidate/validators';
 import { computed } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
+import { useProfileStore } from '../store/ProfileStore';
+import useErrorHandle from '../composables/useErrorHandle';
 interface LoginInUser {
-  (e: 'logIn', emit: emitLogin): void;
+  (e: 'logIn'): void;
 }
 
 interface AdminEmail {
@@ -20,39 +22,20 @@ interface AdminEmail {
   user_id: string;
 }
 
-type UserDetails = {
+type UserLogin = {
   email: string;
   password: string;
 };
 
-type emitLogin = {
-  val: boolean;
-  adminLoggedIn: string;
-};
-
-const toast = useToast();
 const currContent: object = shallowRef(Login);
 const emit = defineEmits<LoginInUser>();
 const router = useRouter();
 const loading = ref<boolean>(false);
 const errMsg = ref<string>('');
-const adminEmails: Ref<AdminEmail[] | null> = ref(null);
 function checkPassword(str: string) {
   var re = /^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
   return re.test(str);
 }
-
-onBeforeMount(async () => {
-  try {
-    let { data, error } = await supabase.from('admin_emails').select('*');
-    if (error) throw error;
-    adminEmails.value = data;
-  } catch (err: any) {
-    console.log(err.message);
-  }
-});
-
-// let all variables laod before app loads
 
 const rules = computed(() => {
   return {
@@ -61,7 +44,7 @@ const rules = computed(() => {
   };
 });
 
-async function loginUser(user: UserDetails) {
+async function loginUser(user: UserLogin) {
   loading.value = true;
   const v$l = useVuelidate(rules, user);
   let val: any = await v$l.value.$validate();
@@ -79,23 +62,16 @@ async function loginUser(user: UserDetails) {
     });
     if (error) throw error;
 
-    const user_email = supabase.auth.user()!.email!;
-    const adminLoggedIn = adminEmails.value!.filter(
-      user => user_email == user.email
-    );
-    emit('logIn', {
-      val: true,
-      adminLoggedIn: adminLoggedIn[0] ? 'admin' : 'user',
-    });
-    router.push({ name: 'Dashboard' });
+    emit('logIn');
     loading.value = false;
+    router.push({ name: 'Dashboard' });
     return;
   } catch (err: any) {
     errMsg.value = err.message;
-    loading.value = false;
     setTimeout(() => {
       errMsg.value = '';
     }, 4000);
+    return useErrorHandle(err, loading.value);
   } finally {
     loading.value = false;
   }

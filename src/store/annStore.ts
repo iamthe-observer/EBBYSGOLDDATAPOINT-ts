@@ -1,19 +1,21 @@
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
-import { Ref, ref } from 'vue';
-import * as interfaces from '../interfaces/interfaces';
- import { supabase } from '../supabase/supabase';
+import { ref } from 'vue';
+import { Announcement } from '../interfaces/interfaces';
+import { supabase } from '../supabase/supabase';
 import { _Null } from '../types/types';
+import useErrorHandle from '../composables/useErrorHandle';
 
 export const useAnnStore = defineStore('announcements', () => {
-  const ann: Ref<interfaces.Announcement[] | null> = ref(
-    useStorage('announcements', [])
+  const announcements = ref(
+    useStorage<Announcement[] | null>('announcements', [])
   );
-  const loading = ref<boolean>(false);
-  const inputLoading = ref<boolean>(false);
+  const announcements_loading = ref<boolean>(false);
+  const input_ann_loading = ref<boolean>(false);
 
-  const resetAnn = (): void => {
-    ann.value = [];
+  const reset = () => {
+    announcements.value = [];
+    input_ann_loading.value = false;
   };
 
   const changeDate = (date: Date): string => {
@@ -27,47 +29,53 @@ export const useAnnStore = defineStore('announcements', () => {
     return day;
   };
 
-  const getAnn = async () => {
-    loading.value = true;
+  const setAnnouncements = (ann: Announcement[]) => {
+    announcements.value = ann;
+  };
+
+  const getAnnouncements = async () => {
+    announcements_loading.value = true;
     try {
-      let { data, error } = await supabase.from('announcements').select('*');
+      let { data, error } = await supabase
+        .from<Announcement>('announcements')
+        .select('*');
 
       if (error) throw error;
-      loading.value = false;
-      ann.value = data!.reverse();
-    } catch (error: any) {
-      loading.value = false;
-      console.log(error.message);
+      announcements_loading.value = false;
+      return { data: data?.reverse(), error };
+    } catch (err: any) {
+      return useErrorHandle(err, announcements_loading.value);
     }
   };
 
-  const inputAnn = async (
+  const inputAnnouncement = async (
     obj: {
       subject: string;
       body: string | number | string[] | undefined;
       urgency: string;
     }[]
   ) => {
-    inputLoading.value = true;
+    input_ann_loading.value = true;
     try {
       const { data, error } = await supabase.from('announcements').insert(obj);
       if (error) throw error;
-      inputLoading.value = false;
-      await getAnn();
+      input_ann_loading.value = false;
+      await getAnnouncements();
       return data;
     } catch (error: any) {
       console.log(error.message);
-      inputLoading.value = false;
+      return useErrorHandle(error, input_ann_loading.value);
     }
   };
 
   return {
-    ann,
-    getAnn,
-    loading,
-    inputLoading,
+    announcements,
+    announcements_loading,
+    input_ann_loading,
+    getAnnouncements,
     changeDate,
-    resetAnn,
-    inputAnn,
+    reset,
+    setAnnouncements,
+    inputAnnouncement,
   };
 });

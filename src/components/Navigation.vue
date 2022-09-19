@@ -3,18 +3,14 @@ import { ref, onMounted, computed } from 'vue';
 import 'animate.css';
 import { storeToRefs } from 'pinia';
 import { _Null } from '../types/types';
-import { useProfileStore } from '../store/profileStore';
-import { useDashStore } from '../store/dashboardStore';
+import { useProfileStore } from '../store/ProfileStore';
+import { useDashStore } from '../store/DashboardStore';
+import { useRouterStore } from '../store/RouterStore';
 
-const { uploading } = storeToRefs(useProfileStore());
+const { profiles_loading } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
-interface Props {
-  username: string | null;
-  avatar_url: _Null<string>;
-  isNotFound: boolean;
-}
-const props = defineProps<Props>();
-
+const { active_profile } = storeToRefs(useProfileStore());
+const { isNotFound } = storeToRefs(useRouterStore());
 const dashboard = ref<object | null>(null);
 const contact = ref(null);
 const { version } = storeToRefs(useDashStore());
@@ -56,16 +52,16 @@ const handleLogout = () => {
       >
         <section class="flex justify-center items-center">
           <img
-            v-if="avatar_url"
+            v-if="active_profile.avatar_url"
             :src="
-              avatar_url
-                ? avatar_url
+              active_profile.avatar_url
+                ? active_profile.avatar_url
                 : 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg'
             "
             class="w-15 rounded-full aspect-square border-2 animate__animated animate__fadeIn"
           />
           <i
-            v-else-if="uploading"
+            v-else-if="profiles_loading"
             class="pi pi-spin pi-spinner text-[2rem]"
           ></i>
           <img
@@ -74,7 +70,9 @@ const handleLogout = () => {
             class="w-15 rounded-full aspect-square border-2 animate__animated animate__fadeIn"
           />
         </section>
-        <span :class="user_role">{{ username ? username : 'User' }}</span>
+        <span :class="user_role">{{
+          active_profile ? active_profile.username : 'User'
+        }}</span>
       </div>
       <div
         ref="dashboard"

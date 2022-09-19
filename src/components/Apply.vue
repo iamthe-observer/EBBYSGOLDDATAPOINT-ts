@@ -13,10 +13,10 @@ import WardForm from './wardForm.vue';
 import Dialog from 'primevue/dialog';
 import gradientButton from '../components/gradientButton.vue';
 import { supabase } from '../supabase/supabase';
-import { useDashStore } from '../store/dashboardStore';
+import { useDashStore } from '../store/DashboardStore';
 import Avatar from './avatar.vue';
 import FileUpload from 'primevue/fileupload';
-import { useApplyImgStore } from '../store/aplImgStore';
+import { useApplyImgStore } from '../store/AplImgStore';
 import { v4 as uuidv4 } from 'uuid';
 import { storeToRefs } from 'pinia';
 import ToggleButton from 'primevue/togglebutton';
@@ -29,9 +29,12 @@ import { Applicant } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
 import { required, email } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
+import { useApplicantStore } from '../store/ApplicantStore';
+import { useProfileStore } from '../store/ProfileStore';
 
 const PRICE_PER_APL: number = 20;
 const PRICE_PER_WARD: number = 20;
+const { role } = storeToRefs(useProfileStore());
 
 const totalPayment: ComputedRef<number> = computed(() => {
   if (!hasSpouse.value && !hasWard.value) {
@@ -170,7 +173,7 @@ onMounted(() => {
 const apply: Ref<HTMLDivElement | null> = ref(null);
 const loading = ref(false);
 const imgUploading = ref(false);
-const { hasFiles } = storeToRefs(useApplyImgStore());
+const { has_files } = storeToRefs(useApplyImgStore());
 const editMode = ref(false);
 const showPrice = ref(false);
 const disabled = ref(false);
@@ -358,8 +361,12 @@ const applyApl = async () => {
   let apl_id = uuidv4();
   loading.value = true;
   try {
-    if (hasFiles.value) {
-      apl.aplImg_path = await useApplyImgStore().uploadFiles(apl_id);
+    if (has_files.value) {
+      let { primePath, secPath, wardsPath } =
+        await useApplyImgStore().uploadFiles(apl_id);
+      apl.aplImg_path.primePath = primePath;
+      apl.aplImg_path.secPath = secPath;
+      apl.aplImg_path.wardsPath = wardsPath;
     }
     // const { data, error } = await supabase.from('applicants').upsert([apl]);
     const { data, error } = await supabase
@@ -416,7 +423,7 @@ const applyApl = async () => {
     console.log(apl);
 
     hasSaved.value = true;
-    useDashStore().getApls();
+    if (role.value) useApplicantStore().getApplicants();
     loading.value = false;
     setTimeout(() => {
       hasSaved.value = false;

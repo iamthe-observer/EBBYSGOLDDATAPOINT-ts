@@ -3,7 +3,7 @@ import { reactive, ref, watchEffect, inject } from 'vue';
 import ToggleButton from 'primevue/togglebutton';
 import Avatar from './avatar.vue';
 import FileUpload from 'primevue/fileupload';
-import { useApplyImgStore } from '../store/aplImgStore';
+import { useApplyImgStore } from '../store/AplImgStore';
 import InlineMessage from 'primevue/inlinemessage';
 import Countries from './countries.vue';
 import { useToggleState } from '../composables/useToggleState';

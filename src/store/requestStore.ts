@@ -1,18 +1,26 @@
-import { defineStore } from 'pinia';
+import { defineStore, storeToRefs } from 'pinia';
 import { supabase } from '../supabase/supabase';
 import { ref, Ref, computed } from 'vue';
-import { useProfileStore } from './profileStore';
-import { storeToRefs } from 'pinia';
 import { Applicant, Requests } from '../interfaces/interfaces';
+import useErrorHandle from '../composables/useErrorHandle';
+import { _Null } from '../types/types';
+import { useProfileStore } from './ProfileStore';
 
 export const useRequestStore = defineStore('requests', () => {
-  const loading = ref(false);
-  const requests: Ref<Requests[] | null> = ref([]);
-  const isRequestOpen = ref(false);
-  const currentRequest: Ref<Requests | null> = ref(null);
+  const requests_loading = ref(false);
+  const requests: Ref<Requests[]> = ref([]);
+  const current_request: Ref<Requests | null> = ref(null);
+  const is_request_open = ref(false);
+  const view_ward_request_image = ref<boolean>(false);
   const { role } = storeToRefs(useProfileStore());
 
-  const statusClass = (requests: string): string => {
+  // methods
+  const reset = () => {
+    requests.value = [];
+    current_request.value = null;
+  };
+
+  const status_class = (requests: string): string => {
     if (requests == 'pending') {
       return 'text-xs w-[85px] text-center text-indigo-600 bg-indigo-200 px-2 py-1 rounded-full group-hover:outline group-hover:outline-2 group-hover:outline-indigo-400';
     } else if (requests == 'accepted') {
@@ -22,19 +30,18 @@ export const useRequestStore = defineStore('requests', () => {
     }
   };
 
-  const curr_request = ref<Requests | null>(null);
-
-  const setCurrRequest = (request: Requests) => {
-    curr_request.value = request;
+  const setRequests = (req: Requests[]) => {
+    requests.value = req;
   };
-
-  const viewWardRequestImage = ref<boolean>(false);
+  const setCurrentRequest = (request: Requests) => {
+    current_request.value = request;
+  };
 
   const setViewRequestForWardImageDisplay = (bol: boolean): void => {
-    viewWardRequestImage.value = bol;
+    view_ward_request_image.value = bol;
   };
 
-  const fullName = (x: Applicant) => {
+  const full_name = (x: Applicant) => {
     if (x) {
       const ln = x.plastName;
       const fn = x.pfirstName;
@@ -43,7 +50,158 @@ export const useRequestStore = defineStore('requests', () => {
     }
   };
 
-  const isRequest = computed<boolean>(() => {
+  function capitalizeFirstLetter(string: string) {
+    let lowered = string!.toLowerCase();
+    return lowered.charAt(0).toUpperCase() + lowered.slice(1);
+  }
+
+  const getAllRequests = async () => {
+    requests_loading.value = true;
+    try {
+      const { data, error } = await supabase
+        .from<Requests>('requests')
+        .select('*');
+
+      if (error) throw error;
+      requests.value = data.reverse();
+
+      requests.value?.forEach((request: Requests) => {
+        if (request.modify_type == 'edit') {
+          Object.entries(request.modify_apl).forEach(([key, value]) => {
+            if (
+              key === 'pcountry_ob' ||
+              key === 'scountry_ob' ||
+              key === 'pcountry_live_today'
+            ) {
+              if (!request.modify_apl[key]) return;
+              request.modify_apl[key] = capitalizeFirstLetter(value);
+            }
+            if (
+              key === 'peducation_level' ||
+              key === 'pgender' ||
+              key === 'sgender' ||
+              key === 'pmarital_status'
+            ) {
+              if (!request.modify_apl[key]) return;
+              request.modify_apl[key] = value.toLowerCase();
+            }
+            if (key === 'wards') {
+              request.modify_apl[key].forEach(ward => {
+                Object.entries(ward).forEach(([key, value]) => {
+                  if (key === 'wcountry_ob') {
+                    if (!ward[key]) return;
+                    ward[key] = capitalizeFirstLetter(value);
+                  }
+                });
+              });
+            }
+          });
+        }
+      });
+
+      requests.value.sort((a, b) => b.status.localeCompare(a.status));
+      // console.log('requests: ', requests.value);
+      requests_loading.value = false;
+
+      return { data: requests.value, error };
+    } catch (error: any) {
+      return useErrorHandle(error, requests_loading.value);
+    }
+  };
+
+  const getRequestsById = async (user_id: string) => {
+    requests_loading.value = true;
+    try {
+      const { data, error } = await supabase
+        .from<Requests>('requests')
+        .select('*')
+        .eq('user_id', user_id);
+      if (error) throw error;
+      requests.value = data.reverse();
+
+      requests.value?.forEach((request: Requests) => {
+        if (request.modify_type == 'edit') {
+          Object.entries(request.modify_apl).forEach(([key, value]) => {
+            if (
+              key === 'pcountry_ob' ||
+              key === 'scountry_ob' ||
+              key === 'pcountry_live_today'
+            ) {
+              if (!request.modify_apl[key]) return;
+              request.modify_apl[key] = capitalizeFirstLetter(value);
+            }
+            if (
+              key === 'peducation_level' ||
+              key === 'pgender' ||
+              key === 'sgender' ||
+              key === 'pmarital_status'
+            ) {
+              if (!request.modify_apl[key]) return;
+              request.modify_apl[key] = value.toLowerCase();
+            }
+            if (key === 'wards') {
+              request.modify_apl[key].forEach(ward => {
+                Object.entries(ward).forEach(([key, value]) => {
+                  if (key === 'wcountry_ob') {
+                    if (!ward[key]) return;
+                    ward[key] = capitalizeFirstLetter(value);
+                  }
+                });
+              });
+            }
+          });
+        }
+      });
+
+      requests.value.sort((a, b) => b.status.localeCompare(a.status));
+
+      requests_loading.value = false;
+      return { data, error };
+    } catch (error: any) {
+      return useErrorHandle(error, requests_loading.value);
+    }
+  };
+
+  const refresh = async () => {
+    if (role.value) {
+      requests_loading.value = true;
+      let req = await getRequestsById(supabase.auth.user()?.id!);
+      setRequests(req?.data!);
+      requests_loading.value = false;
+    } else {
+      requests_loading.value = true;
+      let req = await getAllRequests();
+      setRequests(req?.data!);
+      requests_loading.value = false;
+    }
+  };
+
+  const handleOpenAplRequest = (request: Requests) => {
+    is_request_open.value = true;
+    current_request.value = request;
+  };
+
+  const deleteRequest = async (id: string) => {
+    requests_loading.value = true;
+    try {
+      const { data, error } = await supabase
+        .from<Requests>('requests')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      requests_loading.value = false;
+      return { data, error };
+    } catch (error: any) {
+      return useErrorHandle(error, requests_loading.value);
+    }
+  };
+
+  // computed
+  const prime_path = computed((): string => {
+    return current_request.value!.modify_apl.aplImg_path.primePath![0];
+  });
+
+  const is_request = computed<boolean>(() => {
     if (requests.value!.length == 0) {
       return false;
     } else {
@@ -51,125 +209,24 @@ export const useRequestStore = defineStore('requests', () => {
     }
   });
 
-  function capitalizeFirstLetter(string: string) {
-    let lowered = string!.toLowerCase();
-    return lowered.charAt(0).toUpperCase() + lowered.slice(1);
-  }
-
-  const getRequests = async () => {
-    loading.value = true;
-    console.log(role.value);
-
-    if (!role.value) {
-      try {
-        const { data, error } = await supabase.from('requests').select('*');
-
-        if (error) throw error;
-        requests.value = data.reverse();
-
-        requests.value?.forEach((request: Requests) => {
-          if (request.modify_type == 'edit') {
-            Object.entries(request.modify_apl).forEach(([key, value]) => {
-              if (
-                key === 'pcountry_ob' ||
-                key === 'scountry_ob' ||
-                key === 'pcountry_live_today'
-              ) {
-                if (!request.modify_apl[key]) return;
-                request.modify_apl[key] = capitalizeFirstLetter(value);
-              }
-              if (
-                key === 'peducation_level' ||
-                key === 'pgender' ||
-                key === 'sgender' ||
-                key === 'pmarital_status'
-              ) {
-                if (!request.modify_apl[key]) return;
-                request.modify_apl[key] = value.toLowerCase();
-              }
-              if (key === 'wards') {
-                request.modify_apl[key].forEach(ward => {
-                  Object.entries(ward).forEach(([key, value]) => {
-                    if (key === 'wcountry_ob') {
-                      if (!ward[key]) return;
-                      ward[key] = capitalizeFirstLetter(value);
-                    }
-                  });
-                });
-              }
-            });
-          }
-        });
-
-        requests.value.sort((a, b) => b.status.localeCompare(a.status));
-        console.log(requests.value);
-      } catch (error: any) {
-        console.log(error.message);
-      }
-    } else {
-      try {
-        const { data, error } = await supabase
-          .from('requests')
-          .select('*')
-          .eq('user_id', supabase.auth.user()?.id);
-        if (error) throw error;
-        requests.value = data.reverse();
-        console.log(requests.value);
-        loading.value = false;
-      } catch (error: any) {
-        console.log(error.message);
-        loading.value = false;
-      } finally {
-        loading.value = false;
-      }
-    }
-  };
-
-  const refresh = async () => {
-    requests.value = [];
-    loading.value = true;
-    await getRequests();
-    loading.value = false;
-  };
-
-  const primePath = computed((): string => {
-    return currentRequest.value!.modify_apl.aplImg_path.primePath![0];
-  });
-
-  const handleOpenAplRequest = (request: Requests) => {
-    isRequestOpen.value = true;
-    currentRequest.value = request;
-  };
-
-  const deleteRequest = async (id: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('requests')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   return {
     deleteRequest,
-    curr_request,
-    setCurrRequest,
-    primePath,
-    refresh,
-    getRequests,
-    isRequest,
-    isRequestOpen,
-    fullName,
-    statusClass,
-    requests,
-    currentRequest,
+    full_name,
+    status_class,
     handleOpenAplRequest,
-    loading,
     setViewRequestForWardImageDisplay,
-    viewWardRequestImage,
     capitalizeFirstLetter,
+    setCurrentRequest,
+    refresh,
+    getAllRequests,
+    getRequestsById,
+    reset,
+    current_request,
+    prime_path,
+    is_request,
+    is_request_open,
+    view_ward_request_image,
+    requests,
+    requests_loading,
   };
 });

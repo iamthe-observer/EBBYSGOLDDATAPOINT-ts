@@ -1,14 +1,12 @@
 <script setup lang="ts">
-// const props = defineProps(['url', 'editMode', 'uploading']);
 const props = defineProps<{
-  url: string|null;
+  url: string | null | undefined;
   editMode: boolean;
   uploading: boolean;
 }>();
 const emit = defineEmits<{
   (e: 'edit', editMode: boolean): void;
 }>();
-// const emit = defineEmits(['edit']);
 </script>
 
 <template>

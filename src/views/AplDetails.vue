@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { ref, reactive, onBeforeMount, computed, ComputedRef } from 'vue';
+import {
+  ref,
+  reactive,
+  onBeforeMount,
+  computed,
+  ComputedRef,
+  watchEffect,
+} from 'vue';
 import { supabase } from '../supabase/supabase';
 import { useToast } from 'primevue/usetoast';
-import { useApplyImgStore } from '../store/aplImgStore';
-import { useProfileStore } from '../store/profileStore.js';
-import { useRequestStore } from '../store/requestStore';
+import { useApplyImgStore } from '../store/AplImgStore';
+import { useProfileStore } from '../store/ProfileStore';
+import { useRequestStore } from '../store/RequestStore';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
 import Dialog from 'primevue/dialog';
@@ -24,14 +31,14 @@ import {
   WardsApplicant,
   ProfileData,
 } from '../interfaces/interfaces';
+import { storeToRefs } from 'pinia';
 
 const toast = useToast();
 const loading = ref(false);
 const requestLoading = ref(false);
 const route = useRoute();
-const id: ComputedRef<string | any> = computed(() => route.params.id);
-
-// const supabase.auth.user().id = supabase.auth.user().id;
+const id = computed<any>(() => route.params.id);
+const { user_profiles } = storeToRefs(useProfileStore());
 
 let apl = reactive<Applicant>({
   created_at: new Date(),
@@ -188,7 +195,7 @@ const wardRemoved = (e: number) => {
   editedWards.value = wardsRemoved;
 };
 
-const userOfApl = ref<ProfileData | null>(null);
+const userOfApl = ref<ProfileData | null | undefined>(null);
 
 const loadApl = async () => {
   loading.value = true;
@@ -285,8 +292,9 @@ const loadApl = async () => {
       hasWards.value = true;
     }
 
-    let user = useProfileStore().Users.filter(user => user.id === apl.user_id);
-    userOfApl.value = user[0];
+    // let user = user_profiles.value!.filter(user => user.id === apl.user_id);
+    let users = await useProfileStore().getUserProfileByUserId(apl.user_id);
+    userOfApl.value = users?.data![0];
 
     loading.value = false;
   } catch (err: any) {
@@ -331,7 +339,6 @@ const sendRequest = async () => {
           apl_id: apl.apl_id,
           user_id: supabase.auth.user()!.id,
           modify_type: request.value,
-          // modify_apl: apl.value,
           modify_apl: {
             created_at: apl.created_at,
             apl_id: apl.apl_id,
@@ -584,10 +591,15 @@ async function handleAplImgUpdate(
   useApplyImgStore().resetFiles();
 }
 
-const getUser4Apl = computed(() => {
-  let user = useProfileStore().Users.filter(user => user.id === apl.user_id);
-  return user[0];
-});
+// error
+// const getUser4Apl = computed(() => {
+//   let user = user_profiles.value!.filter(user => user.id === apl.user_id);
+//   return user[0];
+// });
+
+// watchEffect(() => {
+//   console.log(getUser4Apl.value);
+// });
 </script>
 
 <template>
@@ -1356,27 +1368,3 @@ const getUser4Apl = computed(() => {
     </div>
   </div>
 </template>
-
-<!-- modify_apl: { aplImg_path: apl.value!.aplImg_path, fullName: full.value,
-passportAvail: apl.value!.passportAvail, plastName:
-apl.value!.plastName?.toUpperCase(), pfirstName:
-apl.value!.pfirstName?.toUpperCase(), potherName:
-apl.value!.potherName?.toUpperCase(), pdob_day: apl.value!.pdob_day, pdob_month:
-apl.value!.pdob_month, pdob_year: apl.value!.pdob_year, pgender:
-apl.value!.pgender?.toUpperCase(), pcity_ob: apl.value!.pcity_ob?.toUpperCase(),
-pcountry_ob: apl.value!.pcountry_ob?.toUpperCase(), ppassport_number:
-apl.value!.ppassport_number, passport_ex_day: apl.value!.passport_ex_day,
-passport_ex_month: apl.value!.passport_ex_month, passport_ex_year:
-apl.value!.passport_ex_year, pemail: apl.value!.pemail, peducation_level:
-apl.value!.peducation_level?.toUpperCase(), pcontact: apl.value!.pcontact,
-pother_contact: apl.value!.pother_contact, ppostal:
-apl.value!.ppostal?.toUpperCase(), pcountry_live_today:
-apl.value!.pcountry_live_today?.toUpperCase(), pmarital_status:
-apl.value!.pmarital_status?.toUpperCase(), children_number:
-apl.value!.children_number, slastName: apl.value!.slastName?.toUpperCase(),
-sfirstName: apl.value!.sfirstName?.toUpperCase(), sotherName:
-apl.value!.sotherName?.toUpperCase(), sdob_day: apl.value!.sdob_day, sdob_month:
-apl.value!.sdob_month, sdob_year: apl.value!.sdob_year, sgender:
-apl.value!.sgender?.toUpperCase(), scity_ob: apl.value!.scity_ob?.toUpperCase(),
-scountry_ob: apl.value!.scountry_ob?.toUpperCase(), wards: editedWards.value,
-psocial_media: apl.value!.psocial_media, }, -->

@@ -1,59 +1,63 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Card from './Card.vue';
-import { storeToRefs } from 'pinia';
-import { useDashStore } from '../store/dashboardStore';
-import { useProfileStore } from '../store/profileStore';
 import AvatarGroup from 'primevue/avatargroup';
 import Avatar from 'primevue/avatar';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import DataView from 'primevue/dataview';
+import { Applicant } from '../interfaces/interfaces';
 import UserDailyReportCard from './userDailyReportCard.vue';
 import AdminAnn from './AdminAnn.vue';
-import { useRequestStore } from '../store/requestStore';
-import { ProfileData } from '../interfaces/interfaces';
+import { useProfileStore } from '../store/ProfileStore';
+import { storeToRefs } from 'pinia';
+import { useAppStore } from '../store/Appstore';
+import { useApplicantStore } from '../store/ApplicantStore';
+import { useRequestStore } from '../store/RequestStore';
 
-const { dashboard } = storeToRefs(useDashStore());
-const { dailyUserSignIns } = storeToRefs(useDashStore());
-const { Users } = storeToRefs(useProfileStore());
-const { getDailyServiceSales } = storeToRefs(useDashStore());
-const viewDailyUsers = ref(false);
+type Props = {
+  dailyUserApls: Applicant[];
+};
+const props = defineProps<Props>();
+const dash_loading = ref(false);
+
+const { content } = storeToRefs(useAppStore());
+const { daily_user_signins } = storeToRefs(useAppStore());
+const { user_profiles } = storeToRefs(useProfileStore());
+const { daily_service_sales } = storeToRefs(useApplicantStore());
+const { total_applicants_number } = storeToRefs(useApplicantStore());
+const { requests } = storeToRefs(useRequestStore());
 const viewDailyReport = ref(false);
 
-const ifUserSignedIn = (user: ProfileData) => {
-  return dailyUserSignIns.value.filter(
-    x =>
-      x.user_id === user.id &&
-      useDashStore().fd(new Date(x.created_at)) == useDashStore().fd(new Date())
-  )[0];
-};
-
-const lastSeenUser = (user: ProfileData) => {
-  let val = ifUserSignedIn(user);
-  let hh = new Date(val.created_at).getHours();
-  let mm = new Date(val.created_at).getMinutes();
-
-  return `Time of Login: ${hh}:${mm}`;
-};
-
-const { requests } = storeToRefs(useRequestStore());
-
-onBeforeMount(async () => {
-  useProfileStore().getUsers();
-  await useRequestStore().getRequests();
+// combination of Users and dailyApls
+const daily_data = ref({
+  apls: props.dailyUserApls,
 });
 
-const pendingRequests = computed(() => {
+// all regular users
+onMounted(async () => {
+  dash_loading.value = true;
+
+  const data = await useProfileStore().getUserProfiles();
+  useProfileStore().set_UserProfiles(data?.regular_users!);
+
+  dash_loading.value = false;
+});
+
+const pending_requests = computed(() => {
   return requests.value!.filter(req => req.status === 'pending');
 });
 
-const totalNumUsers = computed(() => {
-  return Users.value.length;
+const total_numOf_users = computed(() => {
+  if (!user_profiles.value) return 0;
+  return user_profiles.value.length;
 });
-const totalApls = computed(() => {
-  return dashboard.value.apls!.length;
-});
+
+const userImage = (url: string) => {
+  if (!url)
+    return 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg';
+  return url;
+};
 </script>
 
 <template>
@@ -63,7 +67,10 @@ const totalApls = computed(() => {
       <h3 class="font-extrabold text-2xl">Dashboard</h3>
 
       <div
-        @click="() => $router.push('/database')"
+        @click="() =>
+{                          content! = 'search';
+                  $router.push('/database');
+}"
         class="flex items-center justify-between py-1 px-3 w-[min(60%,130px)] bg-indigo-50 shadow-lg transition-all ease-in duration-200 hover:translate-y-[-.2em] group hover:bg-indigo-200 rounded-full self-center cursor-pointer outline outline-4 hover:outline-indigo-300 outline-indigo-100 group"
       >
         <img
@@ -89,7 +96,7 @@ const totalApls = computed(() => {
         <template #body>
           <div class="flex flex-col w-full">
             <span class="text-xs">Total of Completed Applicants</span>
-            <span class="text-2xl">{{ totalApls || 0 }}</span>
+            <span class="text-2xl">{{ total_applicants_number || 0 }}</span>
           </div>
         </template>
         <template #openModalIcon>
@@ -110,7 +117,7 @@ const totalApls = computed(() => {
         <template #body>
           <div class="flex flex-col w-full">
             <span class="text-xs">Reviews And Requests</span>
-            <span class="text-2xl">{{ pendingRequests.length }} pending!</span>
+            <span class="text-2xl">{{ pending_requests.length }} pending!</span>
           </div>
         </template>
         <template #openModalIcon>
@@ -137,25 +144,21 @@ const totalApls = computed(() => {
             <div class="text-2xl flex justify-between">
               <AvatarGroup>
                 <Avatar
-                  v-for="(user, i) in Users.slice(0, 4)"
+                  v-for="(user, i) in user_profiles?.slice(0, 4)"
                   :key="i"
                   shape="circle"
-                  :image="
-                    user.avatar_url
-                      ? user.avatar_url
-                      : 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg'
-                  "
+                  :image="userImage(user.avatar_url!)"
                 />
                 <Avatar
-                  v-if="Users.length > 4"
+                  v-if="user_profiles?.length! > 4"
                   shape="circle"
                   style="background-color: #9c27b0; color: #ffffff"
-                  :label="`+${Users.length - 4}`"
+                  :label="`+${user_profiles?.length! - 4}`"
                 />
               </AvatarGroup>
               <span class="text-2xl"
-                >{{ dailyUserSignIns.length || 0 }}/{{
-                  totalNumUsers
+                >{{ daily_user_signins.length || 0 }}/{{
+                  total_numOf_users
                 }}
                 logins</span
               >
@@ -195,14 +198,14 @@ const totalApls = computed(() => {
             <span
               class="font-bold absolute text-sm text-center bg-red-500 px-2 py-1 rounded-full text-white flex items-center right-[-45px] top-[-15px] shadow-xl"
               ><i class="pi pi-money-bill mr-1"></i>
-              {{ getDailyServiceSales || 0 }}.00</span
+              {{ daily_service_sales || 0 }}.00</span
             >
           </div>
         </template>
 
         <DataView
-          v-if="Users.length > 0"
-          :value="Users"
+          v-if="user_profiles?.length! > 0"
+          :value="user_profiles || []"
           layout="list"
           class="w-full overflow-hidden"
           :dataKey="'bean'"
@@ -211,7 +214,10 @@ const totalApls = computed(() => {
             <div
               class="product-list-item min-h-[100px] flex w-full font-Outfit justify-between mb-3 mx-auto group hover:bg-gray-200 rounded-lg p-3 transition-all duration-200 ease-linear bg-gray-100"
             >
-              <UserDailyReportCard :slotProps="slotProps" />
+              <UserDailyReportCard
+                :profile="slotProps.data"
+                :apls="props.dailyUserApls!"
+              />
             </div>
           </template>
         </DataView>

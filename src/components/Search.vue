@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watchEffect } from 'vue';
 import aplcard from './aplcard.vue';
 import { supabase } from '../supabase/supabase';
-import { useSearchStore } from '../store/searchStore';
+import { useSearchStore } from '../store/SearchStore';
 import { storeToRefs } from 'pinia';
 import Chip from 'primevue/chip';
 import Calendar from 'primevue/calendar';
@@ -21,7 +21,7 @@ const searchMessage = ref<_Null<string>>(null);
 const searchStore = useSearchStore();
 const searchInput = ref<HTMLInputElement | null>(null);
 const searchType = ref(false);
-const { search } = storeToRefs(useSearchStore());
+const { recent_search } = storeToRefs(useSearchStore());
 
 const hasSearchResults = computed(() => {
   if (searchResults.value.length > 0) return true;
@@ -42,15 +42,15 @@ watchEffect(() => {
   }
 });
 
-function debounce(cb: Function, delay = 1000) {
-  let timeout: number | undefined;
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      cb(...args);
-    }, delay);
-  };
-}
+// function debounce(cb: Function, delay = 1000) {
+//   let timeout: number | undefined;
+//   return (...args: any[]) => {
+//     clearTimeout(timeout);
+//     timeout = setTimeout(() => {
+//       cb(...args);
+//     }, delay);
+//   };
+// }
 
 const getSearch = async () => {
   searchMessage.value = null;
@@ -212,7 +212,10 @@ onMounted(() => {
         <Calendar
           inputClass="rounded-full font-Outfit shadow-xl text-lg text-black h-[50px] min-w-full p-5 text-center bg-indigo-200 placeholder:text-white hover:placeholder:text-indigo-300 focus:border-2 focus:border-indigo-500 focus:placeholder:text-indigo-300 hover:border-2 hover:border-indigo-400"
           v-if="searchType && !hasSearchResults"
+          class="rounded-full"
           v-model="dateSearch"
+          :touchUI="true"
+          panelClass="rounded-full"
           dateFormat="dd | mm | yy"
         />
 
@@ -238,16 +241,17 @@ onMounted(() => {
         </div>
         <section class="flex flex-col gap-2 w-full mt-6" v-if="!isAplList">
           <h3
-            v-if="search.recentSearch.length > 0"
+            v-if="recent_search!.length > 0"
             class="w-fit mx-auto text-indigo-400 mb-1 bg-indigo-200 rounded-full py-1 px-4 font-Outfit"
           >
             Recent Searches
           </h3>
           <div class="flex items-center justify-center gap-3">
             <Chip
-              v-for="(recent, i) in search.recentSearch"
+              v-for="(recent, i) in recent_search"
               :label="recent!.fullName"
               class="cursor-pointer w-fit"
+              :key="i"
               @click="
                 $router.push({
                   name: 'AplDetails',

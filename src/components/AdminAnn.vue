@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, Ref, watchEffect, onMounted } from 'vue';
-import { useAnnStore } from '../store/annStore';
+import { useAnnStore } from '../store/AnnStore';
 import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
@@ -10,12 +10,12 @@ import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { Announcement } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
-import { useDashStore } from '../store/dashboardStore';
+import { useDashStore } from '../store/DashboardStore';
 
 const toast = useToast();
 const annStore = useAnnStore();
-const { ann } = storeToRefs(annStore);
-const { loading } = storeToRefs(annStore);
+const { announcements } = storeToRefs(annStore);
+const { announcements_loading } = storeToRefs(annStore);
 const refreshAnn = ref(0);
 const viewAnn = ref(false);
 const currentAnn: Ref<_Null<Announcement>> = ref(null);
@@ -23,14 +23,15 @@ const urgency = ref<boolean>(false);
 const subjbody = ref<boolean>(false);
 
 const todayAnnArr = computed<Announcement[]>(() => {
-  return ann.value!.filter(
+  return announcements.value!.filter(
     y =>
       useDashStore().fd(new Date(y.created_at)) ===
       useDashStore().fd(new Date())
   );
 });
+
 onMounted(() => {
-  annStore.getAnn();
+  annStore.getAnnouncements();
 });
 
 let currentAnnArr = ref<Announcement[] | null>(todayAnnArr.value);
@@ -48,7 +49,7 @@ const toggleEvt = (evt: boolean) => {
   if (!evt) {
     currentAnnArr.value = todayAnnArr.value;
   } else {
-    currentAnnArr.value = ann.value;
+    currentAnnArr.value = announcements.value;
   }
 };
 
@@ -63,9 +64,10 @@ const changeDate = (date: Date) => {
   return day;
 };
 
-const refresh = () => {
-  annStore.resetAnn();
-  annStore.getAnn();
+const refresh = async () => {
+  annStore.reset();
+  const ann = await annStore.getAnnouncements();
+  annStore.setAnnouncements(ann?.data!);
   refreshAnn.value++;
 };
 
@@ -106,7 +108,7 @@ const inputLoading = ref<boolean>();
 async function inputAnn() {
   inputLoading.value = true;
   if (subject.value) {
-    await useAnnStore().inputAnn([
+    await useAnnStore().inputAnnouncement([
       {
         subject: subject.value,
         body: body.value,
@@ -134,7 +136,9 @@ async function inputAnn() {
     <Toast />
     <div class="flex justify-between">
       <h2 class="text-xl font-extrabold">Announcements</h2>
-      <div class="min-w-[200px] min-h-[30px] flex gap-3 items-center">
+      <div
+        class="min-w-[200px] min-h-[30px] flex gap-3 items-center justify-end"
+      >
         <Toggle @update="toggleEvt" />
         <i
           class="pi pi-refresh font-bold text-lg mr-2 cursor-pointer"
@@ -184,7 +188,7 @@ async function inputAnn() {
       class="bg-gray-100 flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 font-bold rounded-xl py-3"
     >
       <span>
-        <i class="pi pi-spin pi-spinner" v-if="loading" />
+        <i class="pi pi-spin pi-spinner" v-if="announcements_loading" />
         No Announcements Yet</span
       >
     </div>

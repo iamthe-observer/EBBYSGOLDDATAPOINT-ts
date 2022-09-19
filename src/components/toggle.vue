@@ -1,34 +1,26 @@
 <template>
-  <div class="flex w-full h-full bg-indigo-100 shadow-inner rounded-full">
-    <div
-      @click="toggleState"
-      class="rounded-full animate__animated animate__fadeIn cursor-pointer toggleSelected w-full m-1 text-center"
-    >
-      Today
-    </div>
-    <div
-      @click="toggleState"
-      class="rounded-full animate__animated animate__fadeIn cursor-pointer w-full m-1 text-center"
-    >
-      All
-    </div>
-  </div>
+  <ToggleButton
+    v-model="toggle"
+    onLabel="All"
+    offLabel="Today"
+    onIcon="pi pi-comments"
+    offIcon="pi pi-comment"
+    class="rounded-full h-5 w-fit"
+    @click="$emit('update', toggle)"
+  ></ToggleButton>
 </template>
 
 <script setup lang="ts">
-import { useToggleState } from '../composables/useToggleState';
-const toggle = useToggleState();
+import ToggleButton from 'primevue/togglebutton';
+import { ref } from 'vue';
+const toggle = ref<boolean>(false);
 const emit = defineEmits<{
   (e: 'update', toggle: boolean): void;
 }>();
-
-const toggleState = (x: any) => {
-  const children = x.target.parentNode.children;
-  for (const child of children) {
-    child.classList.remove('toggleSelected');
-  }
-  x.target.classList.add('toggleSelected');
-  toggle.toggleState();
-  emit('update', toggle.state.value);
-};
 </script>
+
+<style scoped>
+.p-togglebutton {
+  border-radius: 50px;
+}
+</style>

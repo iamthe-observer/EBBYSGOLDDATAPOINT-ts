@@ -1,22 +1,57 @@
 <script setup lang="ts">
-import { ref, onBeforeMount, computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import Button from 'primevue/button';
 import Chip from 'primevue/chip';
-import { useUserStore } from '../store/userStore';
-import { useDashStore } from '../store/dashboardStore';
+import { useDashStore } from '../store/DashboardStore';
 import { storeToRefs } from 'pinia';
 import { Applicant, ProfileData } from '../interfaces/interfaces';
+import { useRouter } from 'vue-router';
+import _ from 'lodash';
+import { useAppStore } from '../store/Appstore';
+import { useProfileStore } from '../store/ProfileStore';
+import { UserData } from '../interfaces/interfaces';
 
-const props = defineProps(['slotProps']);
-const userApls = ref<Applicant[]>([]);
-const { dailyUserSignIns } = storeToRefs(useDashStore());
+const router = useRouter();
+const props = defineProps<{
+  profile: ProfileData;
+  apls: Applicant[];
+}>();
 
-const totalUserDailyApls = computed(() => {
-  return userApls.value.length;
+// onMounted(() => {
+//   console.log('profile', props.profile);
+//   // console.log('user_apls', user_apls.value);
+//   console.log('total', total_payment_user_apls.value);
+// });
+
+const user_apls = computed(() => {
+  return props.apls.filter((apl: Applicant) => {
+    return apl.user_id === props.profile.id;
+  });
 });
 
+const total_payment_user_apls = computed(() => {
+  let val = user_apls.value.map(apl => {
+    return apl.totalPayment;
+  });
+
+  if (val.length == 0) {
+    return 0;
+  } else {
+    return val.reduce((a, b) => {
+      return a + b;
+    });
+  }
+});
+
+const total$apls = computed(() => {
+  let merge = _.spread(_.partial(_.merge, {}));
+  return merge(user_apls.value);
+});
+
+const { daily_user_signins } = storeToRefs(useAppStore());
+
 const ifUserSignedIn = (user: ProfileData) => {
-  return dailyUserSignIns.value.filter(
+  return daily_user_signins.value.filter(
     x =>
       x.user_id === user.id &&
       useDashStore().fd(new Date(x.created_at)) == useDashStore().fd(new Date())
@@ -31,75 +66,73 @@ const lastSeenUser = (user: ProfileData) => {
   return `Time of Login: ${hh}:${mm}`;
 };
 
-// const totalUserDailyAplsAmount = computed(() => {
-//   if (userApls.value.length) {
-//     let val = []
-//       .concat(...userApls.value)
-//       .map((apl:Applicant) => apl.totalPayment)
-//       .reduce((a, b) => a + b);
-
-//     return val;
-//   }
-// });
-
-// const refresh = async () => {
-//   userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
-// };
-
 // onBeforeMount(async () => {
-//   userApls.value = await useUserStore().getUserApls(props.slotProps.data.id);
+//   user.value = await useUserStore().get_dailyUserApls(
+//     props.profile.data.id
+//   );
 // });
+
+const ViewUserReport = (userData: UserData) => {
+  useProfileStore().setUserData(userData);
+
+  router.push({
+    name: 'UserReport',
+    params: {
+      id: props.profile.id,
+    },
+  });
+};
 </script>
 
 <template>
   <div class="flex gap-3">
     <img
       :src="
-        slotProps.data.avatar_path
-          ? `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/${slotProps.data.avatar_path}`
+        profile.avatar_path
+          ? `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/${profile.avatar_path}`
           : 'https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/avatars/avatar.svg'
       "
       class="w-[100px] h-[100px] rounded-lg"
     />
     <div class="product-list-detail flex flex-col justify-between">
       <div class="product-name text-xl font-bold">
-        {{ slotProps.data.full_name }}
+        {{ profile.full_name }}
       </div>
       <div class="product-description text-md font-semibold">
-        {{ slotProps.data.username }}
+        {{ profile.username }}
       </div>
       <div class="flex gap-3 items-center">
-        <!-- <Chip
-          :label="`${
-            totalUserDailyAplsAmount ? totalUserDailyAplsAmount : 0
-          }.00`"
-          icon="pi pi-money-bill"
-          class="group-hover:text-white group-hover:bg-gray-400 transition-all duration-200 ease-linear font-Outfit font-bold"
-        /> -->
         <Chip
-          :label="`${totalUserDailyApls} Applicants Done`"
+          :label="`${total_payment_user_apls}.00`"
+          :icon="
+            total_payment_user_apls
+              ? 'pi pi-money-bill text-green-500'
+              : 'pi pi-money-bill'
+          "
+          class="group-hover:text-white group-hover:bg-gray-400 transition-all duration-200 ease-linear font-Outfit font-bold"
+        />
+        <Chip
+          :label="`${user_apls.length} Applicants Done`"
           icon="pi pi-users"
           class="group-hover:text-white group-hover:bg-gray-400 transition-all duration-200 ease-linear font-Outfit font-bold"
         />
 
         <div
           :class="
-            ifUserSignedIn(slotProps.data)
+            ifUserSignedIn(profile)
               ? 'badge badge-accent rounded-lg font-bold'
               : 'badge badge-warning rounded-lg font-bold'
           "
         >
           {{
-            ifUserSignedIn(slotProps.data)
-              ? 'Logged In Today'
-              : 'Has Not Logged In'
+            ifUserSignedIn(profile) ? 'Logged In Today' : 'Has Not Logged In'
           }}
         </div>
         <div
-          v-if="ifUserSignedIn(slotProps.data)"
+          v-if="ifUserSignedIn(profile)"
           class="badge badge-accent rounded-lg font-bold"
         >
-          {{ lastSeenUser(slotProps.data) }}
+          {{ lastSeenUser(profile) }}
         </div>
       </div>
     </div>
@@ -108,11 +141,6 @@ const lastSeenUser = (user: ProfileData) => {
     class="p-button-rounded bg-purple-500 self-center"
     icon="pi
     pi-search"
-    @click="
-      $router.push({
-        name: 'UserReport',
-        params: { id: slotProps.data.id, data: JSON.stringify(slotProps.data) },
-      })
-    "
+    @click="ViewUserReport({ profile: profile, apls: user_apls })"
   />
 </template>

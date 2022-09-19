@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import { useRequestStore } from '../store/requestStore';
 import { onBeforeMount } from 'vue';
-
-const store = useRequestStore();
+import { useRequestStore } from '../store/RequestStore';
+import { supabase } from '../supabase/supabase';
 
 onBeforeMount(() => {
-  store.getRequests();
+  useRequestStore().getRequestsById(supabase.auth.user()?.id!);
 });
 </script>
 
@@ -19,7 +18,7 @@ onBeforeMount(() => {
       <h2 class="text-xl font-extrabold">Review Requests</h2>
       <i
         class="pi pi-refresh font-bold text-lg mr-2 cursor-pointer"
-        @click="store.refresh()"
+        @click="useRequestStore().refresh()"
       />
     </div>
     <div
@@ -34,19 +33,19 @@ onBeforeMount(() => {
 
     <div
       class="overflow-y-scroll rounded-xl bg-gray-100"
-      v-if="store.isRequest"
+      v-if="useRequestStore().requests.length > 0"
     >
       <div
-        v-for="(request, i) of store.requests"
+        v-for="(request, i) of useRequestStore().requests"
         :key="i"
-        @click="store.handleOpenAplRequest(request)"
+        @click="useRequestStore().handleOpenAplRequest(request)"
         class="cursor-pointer modal-button"
       >
         <div
           class="flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 group rounded-xl py-3"
         >
           <div class="w-full justify-center flex">
-            <div :class="store.statusClass(request.status)">
+            <div :class="useRequestStore().status_class(request.status)">
               {{ request.status }}
             </div>
           </div>
@@ -67,14 +66,16 @@ onBeforeMount(() => {
       class="bg-gray-100 flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 font-bold rounded-xl py-3"
     >
       <span
-        ><i v-if="store.loading" class="pi pi-spin pi-spinner mr-1" />No
-        Requests requested lol...</span
+        ><i
+          v-if="useRequestStore().requests_loading"
+          class="pi pi-spin pi-spinner mr-1"
+        />No Requests requested lol...</span
       >
     </div>
     <teleport to="body">
       <Dialog
         :modal="true"
-        :visible="store.isRequestOpen"
+        :visible="useRequestStore().is_request_open"
         class="font-Outfit"
         :closable="false"
         :draggable="false"
@@ -85,8 +86,8 @@ onBeforeMount(() => {
           <div class="flex gap-2 relative">
             <span
               class="relative font-bold text-3xl bg-purple-500 px-4 py-2 rounded-full text-white"
-              >{{ store.currentRequest?.modify_apl.pfirstName }}'s
-              {{ store.currentRequest?.modify_type.toUpperCase() }}
+              >{{ useRequestStore().current_request?.modify_apl.pfirstName }}'s
+              {{ useRequestStore().current_request?.modify_type.toUpperCase() }}
               Request</span
             >
           </div>
@@ -96,21 +97,25 @@ onBeforeMount(() => {
             class="w-fit max-w-[30%] h-[300px] flex flex-col p-3 justify-center items-center bg-indigo-50 rounded-md gap-3 font-Outfit text-bold"
           >
             <img
-              :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${store.primePath}`"
+              :src="`https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${
+                useRequestStore().prime_path
+              }`"
               class="w-[100px] h-[100px] rounded-lg outline outline-[rgb(255,255,255)] outline-4"
             />
             <p class="font-bold text-center">
-              {{ store.currentRequest?.modify_apl.fullName }}
+              {{ useRequestStore().current_request?.modify_apl.fullName }}
             </p>
             <p class="uppercase">
               {{
-                store.currentRequest?.modify_apl.pcontact
-                  ? store.currentRequest?.modify_apl.pcontact
+                useRequestStore().current_request?.modify_apl.pcontact
+                  ? useRequestStore().current_request?.modify_apl.pcontact
                   : 'Contact Not Available'
               }}
             </p>
-            <p :class="store.statusClass(store.currentRequest!.status)">
-              {{ store.currentRequest?.status }}
+            <p
+              :class="useRequestStore().status_class(useRequestStore().current_request!.status)"
+            >
+              {{ useRequestStore().current_request?.status }}
             </p>
           </div>
           <div
@@ -120,7 +125,7 @@ onBeforeMount(() => {
               Reason for Request :
             </h3>
             <div class="p-3 flex-1 w-full h-max bg-white rounded-md uppercase">
-              {{ store.currentRequest!.reason_body }}
+              {{ useRequestStore().current_request!.reason_body }}
             </div>
           </div>
         </div>
@@ -128,7 +133,10 @@ onBeforeMount(() => {
         <template #footer>
           <div class="w-full">
             <Button
-              @click="store.isRequestOpen = !store.isRequestOpen"
+              @click="
+                useRequestStore().is_request_open =
+                  !useRequestStore().is_request_open
+              "
               icon="pi pi-times"
               label="Close"
               class="p-button-rounded p-button-danger"

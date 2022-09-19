@@ -1,76 +1,32 @@
-import { defineStore, storeToRefs } from 'pinia';
+import { defineStore } from 'pinia';
 import { supabase } from '../supabase/supabase';
-import { useStorage } from '@vueuse/core';
-import { useProfileStore } from './profileStore';
-import { ref, Ref, computed } from 'vue';
-import * as interfaces from '../interfaces/interfaces';
+import { ref } from 'vue';
+import { SupervisorInfo } from '../interfaces/interfaces';
+import useErrorHandle from '../composables/useErrorHandle';
 
 export const useDashStore = defineStore('dashboard', () => {
-  const dashboard = ref(
-    useStorage<interfaces.Dashboard>('dashboard', {
-      // dailyUserApls: [],
-      apls: [],
-      paginatedApls: [],
-      super_contact_info: [],
-    })
-  );
+  const supervisor_info = ref<SupervisorInfo[]>([]);
+  const dash_loading = ref(false);
+  const version = ref('1.10.5');
 
-  const { role } = storeToRefs(useProfileStore());
-  const loading = ref(false);
-  const dailyUserSignIns: Ref<interfaces.UserSignIn[]> = ref([]);
-  const version = ref('1.0.1');
-
-  let startNum = ref(0);
-  let endNum = ref(9);
-
-  const dailyUserApls = computed(() => {
-    return dashboard.value.apls!.filter(
-      y => fd(new Date(y.created_at)) === fd(new Date())
-    );
-  });
-
-  const getTotalUserAplsNumb = computed(() => dashboard.value.apls!.length);
-
-  const getApls = async () => {
-    loading.value = true;
-    try {
-      if (role.value === true) {
-        const { data, error } = await supabase
-          .from('applicants')
-          .select('*')
-          .order('plastName', { ascending: true })
-          .eq('user_id', supabase.auth.user()!.id);
-        if (error) throw error;
-        dashboard.value.apls = data;
-      } else {
-        const { data, error } = await supabase
-          .from('applicants')
-          .select('*')
-          .order('plastName', { ascending: true });
-        if (error) throw error;
-        dashboard.value.apls = data;
-      }
-      loading.value = false;
-    } catch (err: any) {
-      console.log(err.message);
-      loading.value = false;
-    }
-  };
-
-  const getContactInfo = async () => {
+  const getSupervisorData = async () => {
+    dash_loading.value = true;
     try {
       let { data, error } = await supabase
         .from('super_contact_info')
         .select('*');
       if (error) throw error;
-      dashboard.value.super_contact_info = data;
+      dash_loading.value = false;
+      supervisor_info.value = data!;
+      return { data, error };
     } catch (err: any) {
-      console.trace(err.message);
+      dash_loading.value = false;
+      return useErrorHandle(err, dash_loading.value);
     }
   };
 
   const fd = (date: Date): string => {
-    let today = date;
+    let today: Date = date;
     let dd = String(today.getDate()).padStart(2, '0');
     let mm = String(today.getMonth() + 1).padStart(2, '0');
     let yyyy = today.getFullYear();
@@ -78,81 +34,17 @@ export const useDashStore = defineStore('dashboard', () => {
     return dd + '/' + mm + '/' + yyyy;
   };
 
-  const getDailyServiceSales = computed<number>(() => {
-    const val = dailyUserApls.value.map(x => x.totalPayment);
-    return val.reduce(function (price, nextPrice) {
-      return price + nextPrice;
-    }, 0);
-  });
-
-  const resetApls = () => {
-    loading.value = false;
-    dashboard.value.apls = [];
-  };
-
-  const paginateApls = async (num: number) => {
-    loading.value = true;
-    startNum.value = 10 * num;
-    endNum.value = 9 + 10 * num;
-    try {
-      if (role.value === true) {
-        let { data, error } = await supabase
-          .from('applicants')
-          .select('*')
-          .eq('user_id', supabase.auth.user()!.id)
-          .order('plastName', { ascending: true })
-          .range(startNum.value, endNum.value);
-
-        if (error) throw error;
-        dashboard.value.paginatedApls = data;
-      } else {
-        let { data, error } = await supabase
-          .from('applicants')
-          .select('*')
-          .order('plastName', { ascending: true })
-          .range(startNum.value, endNum.value);
-
-        if (error) throw error;
-        dashboard.value.paginatedApls = data;
-      }
-
-      loading.value = false;
-    } catch (error: any) {
-      console.log(error.message);
-      loading.value = false;
-    }
-  };
-
-  const getDailyUserSignIns = async () => {
-    try {
-      const { data, error } = await supabase.from('user_sign_ins').select('*');
-
-      const val = data!.filter(
-        y => fd(new Date(y.created_at)) === fd(new Date())
-      );
-
-      if (error) throw error;
-      dailyUserSignIns.value = val;
-    } catch (error: any) {
-      console.log(error.message);
-    }
+  const reset = () => {
+    dash_loading.value = false;
+    supervisor_info.value = [];
   };
 
   return {
-    dashboard,
     version,
-    startNum,
-    endNum,
-    loading,
+    dash_loading,
+    supervisor_info,
     fd,
-    resetApls,
-    getApls,
-    dailyUserApls,
-    getTotalUserAplsNumb,
-    getDailyServiceSales,
-    getContactInfo,
-    paginateApls,
-    getDailyUserSignIns,
-    dailyUserSignIns,
+    reset,
+    getSupervisorData,
   };
 });

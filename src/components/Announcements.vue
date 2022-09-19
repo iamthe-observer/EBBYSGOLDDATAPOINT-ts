@@ -1,30 +1,31 @@
 <script setup lang="ts">
 import { ref, computed, watchEffect, onMounted, Ref } from 'vue';
-import { useAnnStore } from '../store/annStore';
+import { useAnnStore } from '../store/AnnStore';
 import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import { Announcement } from '../interfaces/interfaces';
 import { _Null } from '../types/types';
-import { useDashStore } from '../store/dashboardStore';
+import { useDashStore } from '../store/DashboardStore';
 
 const annStore = useAnnStore();
-const { ann } = storeToRefs(annStore);
-const { loading } = storeToRefs(annStore);
+const { announcements } = storeToRefs(annStore);
+const { announcements_loading } = storeToRefs(annStore);
 const refreshAnn = ref(0);
 const viewAnn = ref(false);
 const currentAnn: Ref<_Null<Announcement>> = ref(null);
 
 const todayAnnArr = computed<Announcement[]>(() => {
-  return ann.value!.filter(
+  return announcements.value!.filter(
     y =>
       useDashStore().fd(new Date(y.created_at)) ===
       useDashStore().fd(new Date())
   );
 });
-onMounted(() => {
-  annStore.getAnn();
+onMounted(async () => {
+  const ann = await annStore.getAnnouncements();
+  annStore.setAnnouncements(ann?.data!);
 });
 
 let currentAnnArr = ref<Announcement[] | null>([]);
@@ -42,7 +43,7 @@ const toggleEvt = (evt: boolean) => {
   if (!evt) {
     currentAnnArr.value = todayAnnArr.value;
   } else {
-    currentAnnArr.value = ann.value;
+    currentAnnArr.value = announcements.value;
   }
 };
 
@@ -57,9 +58,10 @@ const changeDate = (date: Date) => {
   return day;
 };
 
-const refresh = () => {
-  annStore.resetAnn();
-  annStore.getAnn();
+const refresh = async () => {
+  annStore.reset();
+  const ann = await annStore.getAnnouncements();
+  annStore.setAnnouncements(ann?.data!);
   refreshAnn.value++;
 };
 
@@ -85,7 +87,9 @@ const handleOpenAnn = (ann: Announcement, index: number) => {
   >
     <div class="flex justify-between">
       <h2 class="text-xl font-extrabold">Announcements</h2>
-      <div class="min-w-[200px] min-h-[30px] flex gap-3 items-center">
+      <div
+        class="min-w-[200px] min-h-[30px] flex gap-3 items-center justify-end"
+      >
         <Toggle @update="toggleEvt" />
         <i
           class="pi pi-refresh font-bold text-lg mr-2 cursor-pointer"
@@ -135,7 +139,7 @@ const handleOpenAnn = (ann: Announcement, index: number) => {
       class="bg-gray-100 flex items-center justify-evenly hover:text-purple-500 hover:bg-gray-300 px-4 font-bold rounded-xl py-3"
     >
       <span>
-        <i class="pi pi-spin pi-spinner" v-if="loading" />
+        <i class="pi pi-spin pi-spinner" v-if="announcements_loading" />
         No Announcements Yet</span
       >
     </div>

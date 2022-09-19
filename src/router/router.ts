@@ -42,16 +42,17 @@ const routes: Array<RouteRecordRaw> = [
     name: 'AdminRequests',
     component: () => import('../views/AdminRequests.vue'),
   },
-  // {
-  //   path: '/userreport/:id',
-  //   name: 'UserReport',
-  //   component: () => import('../components/UserReport'),
-  //   ops: true,
-  // },
   {
-    path: '/viewRequest',
+    path: '/userreport/:id',
+    name: 'UserReport',
+    component: () => import('../views/UserReport.vue'),
+    props: true,
+  },
+  {
+    path: '/viewRequest/:id',
     name: 'ViewRequest',
     component: () => import('../views/ViewRequest.vue'),
+    props: true,
   },
   {
     path: '/:pathMatch(.*)*',

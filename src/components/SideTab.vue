@@ -25,7 +25,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from '@vue/runtime-core';
+import { onMounted, ref, watchEffect } from '@vue/runtime-core';
+
+const props = defineProps<{ init_content: string }>();
 
 const emit = defineEmits({
   contentChange(link) {
@@ -48,9 +50,15 @@ const selectTab = (e: any, link: any) => {
   emit('contentChange', link);
 };
 
-const sL = ref<HTMLDivElement | null>(null);
+const sL = ref<HTMLDivElement>();
 
-const mount = onMounted(() => {
-  sL.value!.children[0].classList.add('selected');
+onMounted(() => {
+  watchEffect(() => {
+    if (props.init_content == 'apply') {
+      return sL.value!.children[0].classList.add('selected');
+    } else {
+      return sL.value!.children[1].classList.add('selected');
+    }
+  });
 });
 </script>

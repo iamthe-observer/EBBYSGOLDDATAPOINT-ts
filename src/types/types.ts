@@ -1,6 +1,7 @@
 export type emitLogin = {
-  val: boolean;
   adminLoggedIn: string;
 };
 
 export type _Null<Type> = Type | null;
+
+export type FileWithAplType = File & { apl_type: string };

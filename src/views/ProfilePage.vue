@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, Ref } from 'vue';
-import { useProfileStore } from '../store/profileStore';
+import { useProfileStore } from '../store/ProfileStore';
 import { storeToRefs } from 'pinia';
 import gradientButton from '../components/gradientButton.vue';
 import { supabase } from '../supabase/supabase';
@@ -15,26 +15,26 @@ import { required, email } from '@vuelidate/validators';
 import useVuelidate from '@vuelidate/core';
 import { _Null } from '../types/types';
 
-const { uploading } = storeToRefs(useProfileStore());
-const profileStore = useProfileStore();
-const { fullname } = storeToRefs(useProfileStore());
-const { username } = storeToRefs(useProfileStore());
-const usernameUploading = ref(false);
-const userName = ref<string | null>('');
-const fullName = ref<string | null>('');
+const { profiles_loading } = storeToRefs(useProfileStore());
+const { active_profile } = storeToRefs(useProfileStore());
 const { url } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
-const editMode = ref(false);
-const resetPassword = ref(false);
-const imageFile: Ref<Event | null> = ref(null);
+const profileStore = useProfileStore();
+const username_uploading = ref(false);
+const user_name = ref<string>('');
+const full_name = ref<string>('');
+const edit_mode = ref(false);
+const image_edit_mode = ref(false);
+const reset_password = ref(false);
+const image_file: Ref<Event | null> = ref(null);
 const toast = useToast();
-const passwordReset = ref('');
-const confirmPasswordReset = ref('');
-const RegisterModal = ref(false);
+const password_reset = ref('');
+const confirm_password_reset = ref('');
+const register_model = ref(false);
 const loading = ref(false);
-const errMsg = ref('');
-
-const registerInfo = reactive<RegisterInfo>({
+const err_msg = ref('');
+const uploading = ref(false);
+const register_info = reactive<RegisterInfo>({
   email: '',
   password: '',
   confirmPassword: '',
@@ -54,13 +54,10 @@ const showToast = (
   });
 };
 
-const adminProfileName = computed(() => {
+const admin_profile_name = computed(() => {
   if (role.value === false) return 'ADMIN ';
 });
 
-// TODO policies for updating and deleting avatars..JUST LEARN POLICIES AND SQL QUERIES
-
-// id: supabase.auth.user()!.id,
 const defaultProfile: DefaultProfile = {
   full_name: 'User',
   username: 'user',
@@ -69,11 +66,12 @@ const defaultProfile: DefaultProfile = {
   id: supabase.auth.user()!.id,
 };
 
-// TODO on before mount of the dashboard
 onMounted(async () => {
+  user_name.value = active_profile.value.username;
+  full_name.value = active_profile.value.full_name;
   try {
-    let ifProfile = await profileStore.checkForProfile();
-    if (ifProfile!.length !== 0) return;
+    let ifProfile = await profileStore.checkForValidProfile();
+    if (ifProfile!.data) return;
     await profileStore.insertDefaultProfile([defaultProfile]);
   } catch (error) {
     console.log(error);
@@ -81,7 +79,7 @@ onMounted(async () => {
 });
 
 function onSelect(event: Event) {
-  imageFile.value = event;
+  image_file.value = event;
   // src.value = imageFile.value.files[0].objectURL;
 }
 
@@ -94,39 +92,42 @@ async function saveAvatarPic(evt: any) {
       'Some internet or server issue... check internet connection.',
       4000
     );
-  // if (!res) return showErrorAvatar();
   return showToast(
     'success',
     'Avatar Updated!',
     `changed avatar...you're welcome.`,
     3000
   );
-  // return showSuccessAvatar();
 }
 
-function enterEditMode() {
-  editMode.value = !editMode.value;
-  userName.value = username.value;
-  fullName.value = fullname.value;
+function enteredit_mode() {
+  edit_mode.value = !edit_mode.value;
+  user_name.value = active_profile.value.username;
+  full_name.value = active_profile.value.full_name;
 }
 
 async function saveProfile() {
-  usernameUploading.value = true;
+  username_uploading.value = true;
   try {
-    await profileStore.updateProfile({
-      username: userName.value,
-      full_name: fullName.value,
-    });
-    await profileStore.getProfile();
-    editMode.value = !editMode.value;
-    showSuccess(userName.value, fullName.value);
+    let ID = supabase.auth.user()?.id;
+    await profileStore.updateProfile(
+      {
+        username: user_name.value,
+        full_name: full_name.value,
+      },
+      ID!
+    );
+    let active_profile = await profileStore.getUserProfileByUserId(ID!);
+    useProfileStore().setActiveProfile(active_profile?.data!);
+    edit_mode.value = !edit_mode.value;
+    showSuccess(user_name.value, full_name.value);
   } catch (err: any) {
     console.log(err.message);
-    usernameUploading.value = false;
-    editMode.value = !editMode.value;
+    username_uploading.value = false;
+    edit_mode.value = !edit_mode.value;
     showError();
   } finally {
-    usernameUploading.value = false;
+    username_uploading.value = false;
   }
 }
 
@@ -138,14 +139,14 @@ function checkPassword(str: string) {
 
 async function updatePassword() {
   passwordUpdating.value = true;
-  if (passwordReset.value !== confirmPasswordReset.value) {
+  if (password_reset.value !== confirm_password_reset.value) {
     showConfirmPasswordError();
     passwordUpdating.value = false;
   } else {
-    if (checkPassword(passwordReset.value)) {
+    if (checkPassword(password_reset.value)) {
       try {
         const { user, error } = await supabase.auth.update({
-          password: passwordReset.value,
+          password: password_reset.value,
           data: { role: 'admin' },
         });
 
@@ -158,18 +159,18 @@ async function updatePassword() {
       }
     } else {
       passwordUpdating.value = false;
-      passwordReset.value = '';
-      confirmPasswordReset.value = '';
+      password_reset.value = '';
+      confirm_password_reset.value = '';
       showPasswordUpdateError();
     }
   }
 }
 
-const showSuccess = (username: string | null, fullname: string | null) => {
+const showSuccess = (username: string | null, full_name: string | null) => {
   toast.add({
     severity: 'success',
     summary: 'Profile Data Updated!',
-    detail: `changed username to "${username}" and name to "${fullname}"...you're welcome.`,
+    detail: `changed username to "${username}" and name to "${full_name}"...you're welcome.`,
     life: 4000,
   });
 };
@@ -246,7 +247,7 @@ const rules = computed(() => {
 
 const registerUser = async () => {
   loading.value = true;
-  const v$ = useVuelidate(rules, registerInfo);
+  const v$ = useVuelidate(rules, register_info);
   let val = await v$.value.$validate();
   console.log(v$);
   if (!val) {
@@ -254,28 +255,28 @@ const registerUser = async () => {
       alert(err.$message);
     });
   } else {
-    if (registerInfo.password !== registerInfo.confirmPassword) {
+    if (register_info.password !== register_info.confirmPassword) {
       loading.value = false;
-      errMsg.value = 'Passwords do not match... try again.';
+      err_msg.value = 'Passwords do not match... try again.';
       setTimeout(() => {
-        errMsg.value = '';
+        err_msg.value = '';
       }, 4000);
     } else {
-      if (checkPassword(registerInfo.password)) {
+      if (checkPassword(register_info.password)) {
         try {
           let { user, error } = await supabase.auth.signUp({
-            email: registerInfo.email,
-            password: registerInfo.password,
+            email: register_info.email,
+            password: register_info.password,
           });
           if (error) throw error;
           showRegisterSuccess();
           loading.value = false;
-          RegisterModal.value = false;
+          register_model.value = false;
         } catch (err: any) {
-          errMsg.value = err.message;
+          err_msg.value = err.message;
           loading.value = false;
           setTimeout(() => {
-            errMsg.value = '';
+            err_msg.value = '';
           }, 4000);
         } finally {
           loading.value = false;
@@ -297,22 +298,22 @@ const registerUser = async () => {
     >
       <h1 class="font-bold text-[3em] text-center">
         <span
-          v-if="adminProfileName"
+          v-if="admin_profile_name"
           class="text-lg text-center text-white outline outline-2 outline-white bg-red-600 rounded-lg px-2 py-1 flex justify-center align-center"
-          >{{ adminProfileName }}</span
+          >{{ admin_profile_name }}</span
         >
         PROFILE
       </h1>
 
       <Avatar
-        @edit="(e:any) => (editMode = e)"
+        @edit="(e:any) => (image_edit_mode = e)"
         :url="url"
-        :editMode="editMode"
+        :editMode="image_edit_mode"
         :uploading="uploading"
       />
 
       <FileUpload
-        v-if="editMode"
+        v-if="image_edit_mode"
         :customUpload="true"
         mode="basic"
         accept="image/*"
@@ -322,73 +323,121 @@ const registerUser = async () => {
 
       <div class="w-[80%] grid grid-cols-2">
         <div
-          v-if="!resetPassword"
+          v-if="!reset_password"
           class="rounded-lg m-3 text-white bg-indigo-500 shadow-2xl p-4"
         >
-          <label class="flex flex-col items-center" for="fullName"
+          <label class="flex flex-col items-center" for="full_name"
             ><span class="px-2 rounded-xl bg-indigo-400">Full Name</span
-            ><span v-if="!editMode" class="text-[2em] text-center font-bold">{{
-              fullname
+            ><span v-if="!edit_mode" class="text-[2em] text-center font-bold">{{
+              full_name
             }}</span
             ><input
               v-else
               class="bg-white text-black h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-[1.3em] font-semibold text-center my-3"
               type="text"
               placeholder="edit name"
-              v-model="fullName"
+              v-model="full_name"
           /></label>
         </div>
         <div
-          v-if="!resetPassword"
+          v-if="!reset_password"
           class="rounded-lg m-3 text-white bg-indigo-500 shadow-2xl p-4"
         >
-          <label class="flex flex-col items-center" for="fullName"
+          <label class="flex flex-col items-center" for="full_name"
             ><span class="px-2 rounded-xl bg-indigo-400">Username</span
-            ><span v-if="!editMode" class="text-[2em] text-center font-bold">{{
-              username
+            ><span v-if="!edit_mode" class="text-[2em] text-center font-bold">{{
+              user_name
             }}</span
             ><input
               v-else
               class="bg-white text-black h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-[1.3em] font-semibold text-center my-3"
               type="text"
               placeholder="edit username"
-              v-model="userName"
+              v-model="user_name"
           /></label>
         </div>
 
         <div
-          v-if="resetPassword"
+          v-if="reset_password"
           class="rounded-lg m-3 text-white bg-indigo-500 shadow-2xl p-4"
         >
-          <label class="flex flex-col items-center" for="fullName"
+          <label class="flex flex-col items-center" for="full_name"
             ><span class="px-2 rounded-xl bg-indigo-400">Password Reset</span
             ><input
               class="bg-white text-black h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-[1.3em] font-semibold text-center my-3"
               type="password"
               placeholder="password"
-              v-model="passwordReset"
+              v-model="password_reset"
           /></label>
         </div>
         <div
-          v-if="resetPassword"
+          v-if="reset_password"
           class="rounded-lg m-3 text-white bg-indigo-500 shadow-2xl p-4"
         >
-          <label class="flex flex-col items-center" for="fullName"
+          <label class="flex flex-col items-center" for="full_name"
             ><span class="px-2 rounded-xl bg-indigo-400"
               >Confirm Password Reset</span
             ><input
               class="bg-white text-black h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-[1.3em] font-semibold text-center my-3"
               type="password"
               placeholder="confirm password"
-              v-model="confirmPasswordReset"
+              v-model="confirm_password_reset"
           /></label>
+        </div>
+      </div>
+
+      <div class="mt-20 w-full gap-5 flex justify-center">
+        <gradient-button
+          @click="register_model = !register_model"
+          v-if="!edit_mode && !role"
+          >Register New User</gradient-button
+        >
+        <gradient-button @click="enteredit_mode" v-if="!edit_mode"
+          >Edit Profile</gradient-button
+        >
+        <div v-else class="flex gap-5 w-full justify-center">
+          <gradient-button v-if="!reset_password" @click="saveProfile()"
+            ><template v-if="!username_uploading"> Save Profile </template>
+            <template #loading v-if="username_uploading">
+              <i class="pi pi-spin pi-spinner text-[1rem]"></i>
+            </template>
+          </gradient-button>
+
+          <gradient-button
+            @click="
+              () => {
+                if (reset_password) updatePassword();
+                reset_password = true;
+                password_reset = '';
+                confirm_password_reset = '';
+              }
+            "
+            ><template v-if="!passwordUpdating">
+              {{ reset_password ? 'Save Password' : 'Reset Password' }}
+            </template>
+            <template #loading v-if="passwordUpdating">
+              <i class="pi pi-spin pi-spinner text-[1rem]"></i>
+            </template>
+          </gradient-button>
+
+          <gradient-button
+            @click="
+              () => {
+                user_name = active_profile.username;
+                full_name = active_profile.full_name;
+                edit_mode = false;
+                reset_password = false;
+              }
+            "
+            >Cancel Edit</gradient-button
+          >
         </div>
       </div>
 
       <teleport to="body">
         <Dialog
           :modal="true"
-          :visible="RegisterModal"
+          :visible="register_model"
           class="font-Outfit"
           :closable="false"
           :draggable="false"
@@ -421,7 +470,7 @@ const registerUser = async () => {
                       <img src="../assets/icons/arroba.png" />
                     </div>
                     <input
-                      v-model="registerInfo.email"
+                      v-model="register_info.email"
                       class="text-center font-[1.3rem] rounded-lg h-[40px] px-[15px] py-[10px] transition-all bg-[rgba(0,0,0,.3)] placeholder:text-white duration-300 text-white my-3 hover:bg-purple-500 backdrop-blur-lg focus:bg-purple-500 focus:outline-none"
                       type="email"
                       placeholder="Email"
@@ -435,7 +484,7 @@ const registerUser = async () => {
                     </div>
                     <input
                       class="text-center font-[1.3rem] rounded-lg h-[40px] px-[15px] py-[10px] transition-all bg-[rgba(0,0,0,.3)] placeholder:text-white duration-300 text-white my-3 hover:bg-purple-500 backdrop-blur-lg focus:bg-purple-500 focus:outline-none"
-                      v-model="registerInfo.password"
+                      v-model="register_info.password"
                       type="password"
                       placeholder="Password"
                       required
@@ -448,7 +497,7 @@ const registerUser = async () => {
                     </div>
                     <input
                       class="text-center font-[1.3rem] rounded-lg h-[40px] px-[15px] py-[10px] transition-all bg-[rgba(0,0,0,.3)] placeholder:text-white duration-300 text-white my-3 hover:bg-purple-500 backdrop-blur-lg focus:bg-purple-500 focus:outline-none"
-                      v-model="registerInfo.confirmPassword"
+                      v-model="register_info.confirmPassword"
                       type="password"
                       placeholder="Confirm Password"
                       required
@@ -456,7 +505,7 @@ const registerUser = async () => {
                   </div>
                 </div>
                 <div>
-                  <span class="errMsg">{{ errMsg }}</span>
+                  <span class="err_msg">{{ err_msg }}</span>
                 </div>
                 <div class="outputs">
                   <gradient-button
@@ -476,7 +525,7 @@ const registerUser = async () => {
           <template #footer>
             <div class="w-full">
               <Button
-                @click="RegisterModal = false"
+                @click="register_model = false"
                 icon="pi pi-times"
                 label="Close"
                 class="p-button-rounded p-button-danger"
@@ -485,52 +534,6 @@ const registerUser = async () => {
           </template>
         </Dialog>
       </teleport>
-
-      <div class="mt-20 w-full gap-5 flex justify-center">
-        <gradient-button
-          @click="RegisterModal = !RegisterModal"
-          v-if="!editMode && !role"
-          >Register New User</gradient-button
-        >
-        <gradient-button @click="enterEditMode" v-if="!editMode"
-          >Edit Profile</gradient-button
-        >
-        <div v-else class="flex gap-5 w-full justify-center">
-          <gradient-button
-            @click="
-              () => {
-                userName = '';
-                editMode = false;
-                resetPassword = false;
-              }
-            "
-            >Cancel Edit</gradient-button
-          >
-          <gradient-button v-if="!resetPassword" @click="saveProfile()"
-            ><template v-if="!usernameUploading"> Save Profile </template>
-            <template #loading v-if="usernameUploading">
-              <i class="pi pi-spin pi-spinner text-[1rem]"></i>
-            </template>
-          </gradient-button>
-
-          <gradient-button
-            @click="
-              () => {
-                if (resetPassword) updatePassword();
-                resetPassword = true;
-                passwordReset = '';
-                confirmPasswordReset = '';
-              }
-            "
-            ><template v-if="!passwordUpdating">
-              {{ resetPassword ? 'Save Password' : 'Reset Password' }}
-            </template>
-            <template #loading v-if="passwordUpdating">
-              <i class="pi pi-spin pi-spinner text-[1rem]"></i>
-            </template>
-          </gradient-button>
-        </div>
-      </div>
     </div>
   </div>
 </template>

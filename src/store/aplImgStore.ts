@@ -3,15 +3,17 @@ import { supabase } from '../supabase/supabase';
 import { ref, computed } from 'vue';
 import { _Null } from '../types/types';
 import { Applicant, WardsApplicant } from '../interfaces/interfaces';
+import { FileWithAplType } from '../types/types';
+import useErrorHandle from '../composables/useErrorHandle';
 
 export const useApplyImgStore = defineStore('aplImgUpload', () => {
-  const files = ref<any[]>([]);
+  const files = ref<FileWithAplType[]>([]);
   const uploading = ref<boolean>(false);
   const primePath = ref<_Null<string[] | undefined>>(null);
   const secPath = ref<_Null<string[]>>(null);
   const wardsPath = ref<_Null<string[]>>(null);
 
-  function setFiles(file: any, type: string) {
+  function setFiles(file: FileWithAplType, type: string) {
     // type -> the kind of apl being saved
     file.apl_type = type;
     const updatedFiles = files.value.filter(x => x.apl_type !== file.apl_type);
@@ -20,13 +22,13 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
   }
 
   function removeFile(): void {
-    if (hasFiles.value) {
+    if (has_files.value) {
       const updatedFiles = files.value.filter(x => x.apl_type !== 'sec');
       files.value = updatedFiles;
     }
   }
 
-  const hasFiles = computed(() => {
+  const has_files = computed(() => {
     if (files.value.length != 0) return true;
     return false;
   });
@@ -106,8 +108,9 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
   }
 
   async function uploadAplImg(uuid: any, file: any) {
+    uploading.value = true;
     console.log(file);
-    if (!hasFiles.value) return;
+    if (!has_files.value) return;
     const fileExt = file.name.split('.').pop();
     const fileName = `${file.apl_type}`;
     const filePath = `${fileName}.${fileExt}`;
@@ -118,16 +121,18 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
         .from('applicants')
         .upload(path, file);
       if (error) throw error;
+      uploading.value = false;
       console.log(data);
 
       console.log('uploaded img');
       return path;
     } catch (err: any) {
-      alert(err.message);
+      return useErrorHandle(err, uploading.value);
     }
   }
 
   async function updateSingleAplImg(path: any) {
+    uploading.value = true;
     try {
       const { data, error } = await supabase.storage
         .from('applicants')
@@ -137,17 +142,21 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
         });
 
       if (error) throw error;
+      uploading.value = false;
       return path;
     } catch (error: any) {
-      console.log(error.message);
+      return useErrorHandle(error, uploading.value);
     }
   }
 
   const updateAplImg = async (path: any, uuid: any) => {
+    uploading.value = true;
     try {
       await deleteAplImg(path);
       await uploadAplImg(uuid, files.value[0]);
+      uploading.value = false;
     } catch (err: any) {
+      uploading.value = false;
       console.trace(err.message);
     } finally {
       resetFiles();
@@ -159,14 +168,16 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
   }
 
   const deleteAplImg = async (path: string) => {
+    uploading.value = true;
     try {
       const { data, error } = await supabase.storage
         .from('applicants')
         .remove([path]);
       if (error) throw error;
+      uploading.value = false;
       return data;
     } catch (err: any) {
-      console.trace(err.message);
+      return useErrorHandle(err, uploading.value);
     }
   };
 
@@ -178,16 +189,17 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
           wardsPath: string[] | null;
         }
       | undefined,
-    NewPath: string,
+    newPath: string,
     id: string | undefined | null,
     type: string
   ) => {
+    uploading.value = true;
     if (type == 'Primary') {
-      pathObj!.primePath?.push(NewPath);
+      pathObj!.primePath?.push(newPath);
     } else if (type == 'Secondary') {
-      pathObj!.secPath?.push(NewPath);
+      pathObj!.secPath?.push(newPath);
     } else {
-      pathObj!.wardsPath?.push(NewPath);
+      pathObj!.wardsPath?.push(newPath);
     }
     try {
       const { data, error } = await supabase
@@ -195,16 +207,17 @@ export const useApplyImgStore = defineStore('aplImgUpload', () => {
         .update({ aplImg_path: pathObj })
         .eq('apl_id', id);
       if (error) throw error;
+      uploading.value = false;
       return data;
     } catch (err: any) {
-      console.trace(err.message);
+      return useErrorHandle(err, uploading.value);
     }
   };
 
   return {
     updateAplPath,
     files,
-    hasFiles,
+    has_files,
     uploading,
     uploadAplImg,
     deleteAplImg,

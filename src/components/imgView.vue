@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const props = defineProps<{ url: string }>();
+// const props = defineProps<{ url: string | undefined }>();
+const { url } = defineProps<{ url: string }>();
 </script>
 
 <template>

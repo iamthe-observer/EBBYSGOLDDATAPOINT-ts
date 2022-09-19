@@ -4,6 +4,11 @@ export interface LoginInUser {
   (e: 'logIn', emit: emitLogin): void;
 }
 
+export interface UserData {
+  profile: ProfileData;
+  apls: Applicant[];
+}
+
 export interface Announcement {
   id: number;
   created_at: Date;
@@ -77,21 +82,13 @@ export interface Applicant {
   };
 }
 
-export interface Dashboard {
-  // dailyUserApls: Applicant[];
-  apls: Applicant[] | null;
-  paginatedApls: Applicant[] | null;
-  super_contact_info:
-    | {
-        created_at: Date;
-        name: string;
-        id: string;
-        phone_number: string;
-        whatsapp_number: string;
-      }[]
-    | null;
+export interface SupervisorInfo {
+  created_at: Date;
+  name: string;
+  id: string;
+  phone_number: string;
+  whatsapp_number: string;
 }
-
 export interface UserSignIn {
   id: string;
   created_at: Date;
@@ -101,12 +98,12 @@ export interface UserSignIn {
 export interface ProfileData {
   id: string;
   updated_at: Date;
-  username: string | null;
+  username: string;
   full_name: string;
   settings: _Null<object>;
   email: string;
-  avatar_url: _Null<string>;
-  avatar_path: _Null<string>;
+  avatar_url: _Null<string> | undefined;
+  avatar_path: _Null<string> | undefined;
   role: boolean;
 }
 
@@ -138,4 +135,11 @@ export interface RegisterInfo {
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+export interface toastOptions {
+  severity: 'success' | 'error' | 'info';
+  summary: string;
+  detail: string;
+  life: number;
 }

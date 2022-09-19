@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useProfileStore } from '../store/profileStore';
-import { useRequestStore } from '../store/requestStore';
+import { useProfileStore } from '../store/ProfileStore';
+import { useRequestStore } from '../store/RequestStore';
+import { onBeforeMount } from 'vue';
 import { storeToRefs } from 'pinia';
 import SplitButton from 'primevue/splitbutton';
 import { supabase } from '../supabase/supabase';
@@ -12,12 +13,16 @@ import { Requests } from '../interfaces/interfaces';
 import Chip from 'primevue/chip';
 
 const { requests } = storeToRefs(useRequestStore());
-const { Users } = storeToRefs(useProfileStore());
+const { user_profiles } = storeToRefs(useProfileStore());
 const toast = useToast();
 const router = useRouter();
 
+onBeforeMount(async () => {});
+
+// @todo make tab system for adminRequests
+
 function getUser4AplInfo(request_user_id: string | undefined) {
-  return Users.value.find(user => user.id == request_user_id);
+  return user_profiles.value!.find(user => user.id == request_user_id);
 }
 
 async function handleApprove(request: Requests) {
@@ -46,8 +51,8 @@ async function handleApprove(request: Requests) {
         life: 2000,
       });
 
-      setTimeout(() => {
-        useRequestStore().getRequests();
+      setTimeout(async () => {
+        await useRequestStore().getAllRequests();
       }, 2000);
     } catch (err: any) {
       console.log(err);
@@ -84,7 +89,7 @@ async function handleApprove(request: Requests) {
       });
 
       setTimeout(() => {
-        useRequestStore().getRequests();
+        useRequestStore().getAllRequests();
       }, 2000);
     } catch (err: any) {
       console.log(err);
@@ -114,7 +119,7 @@ async function handleReject(request: Requests) {
   });
 
   setTimeout(() => {
-    useRequestStore().getRequests();
+    useRequestStore().getAllRequests();
   }, 2000);
 }
 
@@ -127,12 +132,12 @@ async function handleDeleteRequest(id: string) {
     life: 2000,
   });
 
-  useRequestStore().getRequests();
+  useRequestStore().getAllRequests();
 }
 
 const handleViewRequest = (request: Requests) => {
-  useRequestStore().setCurrRequest(request);
-  router.push({ name: 'ViewRequest' });
+  useRequestStore().setCurrentRequest(request);
+  router.push({ name: 'ViewRequest', params: { id: request.user_id } });
 };
 
 const avatarSrc = (path: string | undefined) => {
@@ -218,7 +223,7 @@ const userAvatarSrc = (path: string | undefined) => {
                 </div>
               </td>
               <td class="">
-                <span :class="useRequestStore().statusClass(request.status)">{{
+                <span :class="useRequestStore().status_class(request.status)">{{
                   request.status
                 }}</span>
               </td>

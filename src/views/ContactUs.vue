@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel';
-import { useDashStore } from '../store/dashboardStore';
+import { useDashStore } from '../store/DashboardStore';
 import { storeToRefs } from 'pinia';
+import { useProfileStore } from '../store/ProfileStore';
 
-const { dashboard } = storeToRefs(useDashStore());
+const { supervisor_info } = storeToRefs(useDashStore());
 </script>
 
 <template>
@@ -22,7 +23,7 @@ const { dashboard } = storeToRefs(useDashStore());
 
       <div class="h-full mx-auto flex gap-2 items-center">
         <div
-          v-for="(info, i) in dashboard.super_contact_info"
+          v-for="(info, i) in supervisor_info"
           :key="i"
           class="card min-h-[300px] w-fit bg-gradient-to-br from-purple-300 to-indigo-300 shadow-xl rounded-xl text-white"
         >
@@ -43,46 +44,6 @@ const { dashboard } = storeToRefs(useDashStore());
           </div>
         </div>
       </div>
-
-      <!-- <div class="h-full flex items-center">
-        <div class="card h-fit">
-          <Carousel
-            :value="super_contact_info"
-            :numVisible="3"
-            :numScroll="1"
-            class="custom-carousel w-fit"
-            :circular="true"
-          >
-            <template #item="slotProps">
-              <div class="product-item">
-                <div
-                  class="product-item-content border rounded-lg m-[.3rem] py-[2rem] bg-gradient-to-br from-indigo-100 to-purple-100"
-                >
-                  <div class="mb-3">
-                    <img
-                      src="https://www.primefaces.org/wp-content/uploads/2020/05/placeholder.png"
-                      class="product-image mx-auto"
-                    />
-                  </div>
-                  <div>
-                    <h4 class="mb-1 font-bold text-[1.5em] text-center">
-                      {{ slotProps.data.name }}
-                    </h4>
-                    <h6 class="mt-0 mb-3 font-semibold text-center">
-                      <i class="pi pi-phone"></i> Phone:
-                      {{ slotProps.data.phone_number }}
-                    </h6>
-                    <h6 class="font-semibold text-center w-full">
-                      <i class="pi pi-whatsapp"></i> Whatsapp:
-                      {{ slotProps.data.whatsapp_number }}
-                    </h6>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </Carousel>
-        </div>
-      </div> -->
     </div>
   </div>
 </template>

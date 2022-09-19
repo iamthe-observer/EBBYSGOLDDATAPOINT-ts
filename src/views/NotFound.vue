@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { useProfileStore } from '../store/profileStore';
 import { onMounted, onBeforeUnmount } from 'vue';
+import { useRouterStore } from '../store/RouterStore';
 
-const { isNotFound } = storeToRefs(useProfileStore());
+const { isNotFound } = storeToRefs(useRouterStore());
 onMounted(() => {
   isNotFound.value = true;
 });

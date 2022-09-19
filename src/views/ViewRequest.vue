@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import {
-  toRefs,
   ref,
   onMounted,
   computed,
@@ -11,9 +10,9 @@ import {
 } from 'vue';
 import { supabase } from '../supabase/supabase';
 import { useToast } from 'primevue/usetoast';
-import { useApplyImgStore } from '../store/aplImgStore';
+import { useApplyImgStore } from '../store/AplImgStore';
 import { storeToRefs } from 'pinia';
-import { useProfileStore } from '../store/profileStore.js';
+import { useProfileStore } from '../store/ProfileStore';
 import ProgressSpinner from 'primevue/progressspinner';
 import Tag from 'primevue/tag';
 import WardFormDetails from '../components/wardFormDetails.vue';
@@ -21,7 +20,7 @@ import Button from 'primevue/button';
 import ToggleButton from 'primevue/togglebutton';
 import Toast from 'primevue/toast';
 import _ from 'lodash';
-import { useRequestStore } from '../store/requestStore';
+import { useRequestStore } from '../store/RequestStore';
 import ImageView from '../components/imgView.vue';
 import Countries from '../components/countries.vue';
 import {
@@ -36,10 +35,11 @@ const router = useRouter();
 const loading = ref<boolean>(false);
 const route = useRoute();
 const id = computed(() => route.params.id);
-const { curr_request } = storeToRefs(useRequestStore());
+const { current_request } = storeToRefs(useRequestStore());
+const userOfApl = ref<ProfileData | null | undefined>(null);
 
 const modified_apl = computed(() => {
-  return curr_request.value!.modify_apl;
+  return current_request.value!.modify_apl;
 });
 
 onBeforeMount(() => {
@@ -76,8 +76,8 @@ async function handleApprove(request: Requests | null) {
         life: 2000,
       });
 
-      setTimeout(() => {
-        useRequestStore().getRequests();
+      setTimeout(async () => {
+        await useRequestStore().getAllRequests();
         router.push({ name: 'AdminRequests' });
       }, 2000);
     } catch (err: any) {
@@ -114,8 +114,8 @@ async function handleApprove(request: Requests | null) {
         life: 2000,
       });
 
-      setTimeout(() => {
-        useRequestStore().getRequests();
+      setTimeout(async () => {
+        await useRequestStore().getAllRequests();
         router.push({ name: 'AdminRequests' });
       }, 2000);
     } catch (err: any) {
@@ -146,8 +146,8 @@ async function handleReject(request: Requests | null) {
       life: 2000,
     });
 
-    setTimeout(() => {
-      useRequestStore().getRequests();
+    setTimeout(async () => {
+      await useRequestStore().getAllRequests();
       router.push({ name: 'AdminRequests' });
     }, 2000);
   } catch (error: any) {
@@ -224,7 +224,6 @@ function toggleEditMode() {
   editMode.value = !editMode.value;
 }
 
-const userOfApl = ref<ProfileData | null>(null);
 const primeIMG = ref<any>(null);
 const ifSavedPrimeMsg = ref(false);
 const ifSavedSecMsg = ref(false);
@@ -273,18 +272,19 @@ const saveImgFiles = (e: any, type: string) => {
 
 const full = computed((): string | null => {
   if (
-    curr_request.value!.modify_apl.plastName ||
-    curr_request.value!.modify_apl!.pfirstName
+    current_request.value!.modify_apl.plastName ||
+    current_request.value!.modify_apl!.pfirstName
   ) {
     return null;
   } else {
-    return `${curr_request
+    return `${current_request
       .value!.modify_apl?.plastName!.toUpperCase()
-      .trim()} ${curr_request
+      .trim()} ${current_request
       .value!.modify_apl?.pfirstName!.toUpperCase()
       .trim()}${
-      curr_request.value!.modify_apl!.potherName
-        ? ' ' + curr_request.value!.modify_apl?.potherName.toUpperCase().trim()
+      current_request.value!.modify_apl!.potherName
+        ? ' ' +
+          current_request.value!.modify_apl?.potherName.toUpperCase().trim()
         : ''
     }`;
   }
@@ -325,11 +325,11 @@ const loadApl = async () => {
     const { data, error } = await supabase
       .from('applicants')
       .select('*')
-      .eq('apl_id', curr_request.value?.apl_id);
+      .eq('apl_id', current_request.value?.apl_id);
 
     if (error) throw error;
     console.log(data[0]);
-    console.log(curr_request.value);
+    console.log(current_request.value);
 
     apl.created_at = data[0].created_at;
     apl.apl_id = data[0].apl_id;
@@ -381,8 +381,8 @@ const loadApl = async () => {
       hasWards.value = true;
     }
 
-    let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
-    userOfApl.value = user[0];
+    let users = await useProfileStore().getUserProfileByUserId(apl.user_id);
+    userOfApl.value = users?.data![0];
 
     loading.value = false;
   } catch (err: any) {
@@ -408,10 +408,10 @@ const changeDate = (date: Date) => {
   return day;
 };
 
-const getUser4Apl = computed(() => {
-  let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
-  return user[0];
-});
+// const getUser4Apl = computed(() => {
+//   let user = useProfileStore().Users.filter(user => user.id === apl!.user_id);
+//   return user[0];
+// });
 </script>
 
 <template>
@@ -433,8 +433,8 @@ const getUser4Apl = computed(() => {
           class="text-center bg-gradient-to-br from-cyan-300 to-lime-300 text-[1.5rem] font-bold mt-10 mx-auto text-white px-4 py-2 rounded-xl normal-case after:absolute after:px-[10px] after:bg-teal-400 after:rounded-full after:text-center after:text-[0.5em] after:right-[20px] after:text-slate-50 after:top-[-10px] after:font-extrabold after:content-['Reason_To_Modify'] after:shadow-xl relative"
         >
           {{
-            curr_request?.reason_body
-              ? curr_request?.reason_body!.toLowerCase()
+            current_request?.reason_body
+              ? current_request?.reason_body!.toLowerCase()
               : "'No reason given.'"
           }}
         </h1>
@@ -447,10 +447,10 @@ const getUser4Apl = computed(() => {
 
         <div class="flex gap-3 justify-center">
           <h1
-            v-if="getUser4Apl"
+            v-if="userOfApl"
             class="text-center bg-gradient-to-br from-indigo-300 to-purple-500 text-[0.8rem] font-bold my-1 text-white px-4 py-2 rounded-xl"
           >
-            Applied By: {{ getUser4Apl ? getUser4Apl.username : '' }}
+            Applied By: {{ userOfApl ? userOfApl.username : '' }}
           </h1>
           <h1
             class="text-center bg-gradient-to-br from-indigo-300 to-purple-500 text-[0.8rem] font-bold my-1 text-white px-4 py-2 rounded-xl"
@@ -517,7 +517,7 @@ const getUser4Apl = computed(() => {
                 <label for="ln">Last Name:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.plastName"
+                  v-model="current_request!.modify_apl.plastName"
                   id="ln"
                   name="lastName"
                   type="text"
@@ -528,7 +528,7 @@ const getUser4Apl = computed(() => {
                 <label for="fn">First Name:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.pfirstName"
+                  v-model="current_request!.modify_apl.pfirstName"
                   id="fn"
                   type="text"
                   name="firstName"
@@ -539,7 +539,7 @@ const getUser4Apl = computed(() => {
                 <label for="on">Other Name:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.potherName"
+                  v-model="current_request!.modify_apl.potherName"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -616,7 +616,7 @@ const getUser4Apl = computed(() => {
               <section>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.pdob_day"
+                  v-model="current_request!.modify_apl.pdob_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -625,7 +625,7 @@ const getUser4Apl = computed(() => {
                 />
                 <input
                   required
-                  v-model="curr_request!.modify_apl.pdob_month"
+                  v-model="current_request!.modify_apl.pdob_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -634,7 +634,7 @@ const getUser4Apl = computed(() => {
                 />
                 <input
                   required
-                  v-model="curr_request!.modify_apl.pdob_year"
+                  v-model="current_request!.modify_apl.pdob_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -650,7 +650,7 @@ const getUser4Apl = computed(() => {
               <select
                 required
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                v-model="curr_request!.modify_apl.pgender"
+                v-model="current_request!.modify_apl.pgender"
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -665,7 +665,7 @@ const getUser4Apl = computed(() => {
                 id="cityb"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                v-model="curr_request!.modify_apl.pcity_ob"
+                v-model="current_request!.modify_apl.pcity_ob"
               />
             </div>
 
@@ -724,7 +724,7 @@ const getUser4Apl = computed(() => {
               <select
                 required
                 id="counb"
-                v-model="curr_request!.modify_apl.pcountry_ob"
+                v-model="current_request!.modify_apl.pcountry_ob"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
               >
                 <Countries />
@@ -733,7 +733,7 @@ const getUser4Apl = computed(() => {
               <!-- <input
                 required
                 id="counb"
-                v-model="curr_request!.modify_apl.pcountry_ob"
+                v-model="current_request!.modify_apl.pcountry_ob"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
               /> -->
@@ -745,7 +745,7 @@ const getUser4Apl = computed(() => {
               <label for="pn">Phone Number:</label>
               <input
                 required
-                v-model="curr_request!.modify_apl.pcontact"
+                v-model="current_request!.modify_apl.pcontact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -783,7 +783,7 @@ const getUser4Apl = computed(() => {
               <label for="pn">Next Of Kin Phone Number(s):</label>
               <input
                 required
-                v-model="curr_request!.modify_apl.pother_contact"
+                v-model="current_request!.modify_apl.pother_contact"
                 id="pn"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -795,7 +795,7 @@ const getUser4Apl = computed(() => {
             >
               <label for="em">Email:</label>
               <input
-                v-model="curr_request!.modify_apl.pemail"
+                v-model="current_request!.modify_apl.pemail"
                 id="em"
                 type="email"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -872,14 +872,14 @@ const getUser4Apl = computed(() => {
                 <Tag
                   class="h-4"
                   :value="
-                    curr_request!.modify_apl.passportAvail ? 'Available' : 'Unavailable'
+                    current_request!.modify_apl.passportAvail ? 'Available' : 'Unavailable'
                   "
                   :severity="m_passportStatusColor"
                 ></Tag
               ></label>
               <div class="flex w-full gap-[20px] items-center justify-evenly">
                 <ToggleButton
-                  v-model="curr_request!.modify_apl.passportAvail"
+                  v-model="current_request!.modify_apl.passportAvail"
                   onIcon="pi pi-check"
                   offIcon="pi pi-times"
                   class="h-8 font-Outfit rounded-xl"
@@ -890,7 +890,7 @@ const getUser4Apl = computed(() => {
                 <input
                   id="em"
                   type="text"
-                  v-model="curr_request!.modify_apl.ppassport_number"
+                  v-model="current_request!.modify_apl.ppassport_number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold uppercase"
                 />
               </div>
@@ -902,7 +902,7 @@ const getUser4Apl = computed(() => {
               <label>Passport Expiration Date:</label>
               <section>
                 <input
-                  v-model="curr_request!.modify_apl.passport_ex_day"
+                  v-model="current_request!.modify_apl.passport_ex_day"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -910,7 +910,7 @@ const getUser4Apl = computed(() => {
                   maxlength="2"
                 />
                 <input
-                  v-model="curr_request!.modify_apl.passport_ex_month"
+                  v-model="current_request!.modify_apl.passport_ex_month"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1"
@@ -918,7 +918,7 @@ const getUser4Apl = computed(() => {
                   maxlength="2"
                 />
                 <input
-                  v-model="curr_request!.modify_apl.passport_ex_year"
+                  v-model="current_request!.modify_apl.passport_ex_year"
                   type="number"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                   min="1950"
@@ -970,7 +970,7 @@ const getUser4Apl = computed(() => {
             >
               <label for="pa">Postal Address:</label>
               <input
-                v-model="curr_request!.modify_apl.ppostal"
+                v-model="current_request!.modify_apl.ppostal"
                 id="pa"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -983,7 +983,7 @@ const getUser4Apl = computed(() => {
               <select
                 required
                 id="counb"
-                v-model="curr_request!.modify_apl.pcountry_live_today"
+                v-model="current_request!.modify_apl.pcountry_live_today"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
               >
                 <Countries />
@@ -991,7 +991,7 @@ const getUser4Apl = computed(() => {
 
               <!-- <input
                 required
-                v-model="curr_request!.modify_apl.pcountry_live_today"
+                v-model="current_request!.modify_apl.pcountry_live_today"
                 id="cwylt"
                 type="text"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1043,7 +1043,7 @@ const getUser4Apl = computed(() => {
                 <label for="ln">Facebook:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.psocial_media.facebook"
+                  v-model="current_request!.modify_apl.psocial_media.facebook"
                   id="ln"
                   name="facebook"
                   type="text"
@@ -1054,7 +1054,7 @@ const getUser4Apl = computed(() => {
                 <label for="fn">Instagram:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.psocial_media.instagram"
+                  v-model="current_request!.modify_apl.psocial_media.instagram"
                   id="fn"
                   type="text"
                   name="instagram"
@@ -1065,7 +1065,7 @@ const getUser4Apl = computed(() => {
                 <label for="on">Twitter:</label>
                 <input
                   required
-                  v-model="curr_request!.modify_apl.psocial_media.twitter"
+                  v-model="current_request!.modify_apl.psocial_media.twitter"
                   id="on"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md font-semibold text-center apply-input uppercase"
@@ -1080,7 +1080,7 @@ const getUser4Apl = computed(() => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="curr_request!.modify_apl.pmarital_status"
+                v-model="apl!.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="unmarried">Unmarried</option>
@@ -1097,7 +1097,7 @@ const getUser4Apl = computed(() => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="curr_request!.modify_apl.peducation_level"
+                v-model="apl!.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1127,7 +1127,7 @@ const getUser4Apl = computed(() => {
               <p>Marital Status:</p>
               <select
                 required
-                v-model="curr_request!.modify_apl.pmarital_status"
+                v-model="current_request!.modify_apl.pmarital_status"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="unmarried">Unmarried</option>
@@ -1144,7 +1144,7 @@ const getUser4Apl = computed(() => {
               <p>Highest Level of Education:</p>
               <select
                 required
-                v-model="curr_request!.modify_apl.peducation_level"
+                v-model="current_request!.modify_apl.peducation_level"
                 class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
               >
                 <option value="primary school only">Primary School Only</option>
@@ -1187,7 +1187,7 @@ const getUser4Apl = computed(() => {
             >
               <label for="number-of-children">Number of Children:</label>
               <input
-                v-model="curr_request!.modify_apl.children_number"
+                v-model="current_request!.modify_apl.children_number"
                 id="number-of-children"
                 type="number"
                 class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1255,7 +1255,7 @@ const getUser4Apl = computed(() => {
                 <div>
                   <label for="ln">Last Name:</label>
                   <input
-                    v-model="curr_request!.modify_apl.slastName"
+                    v-model="current_request!.modify_apl.slastName"
                     required
                     id="ln"
                     name="lastName"
@@ -1266,7 +1266,7 @@ const getUser4Apl = computed(() => {
                 <div>
                   <label for="fn">First Name:</label>
                   <input
-                    v-model="curr_request!.modify_apl.sfirstName"
+                    v-model="current_request!.modify_apl.sfirstName"
                     required
                     id="fn"
                     type="text"
@@ -1277,7 +1277,7 @@ const getUser4Apl = computed(() => {
                 <div>
                   <label for="on">Other Name:</label>
                   <input
-                    v-model="curr_request!.modify_apl.sotherName"
+                    v-model="current_request!.modify_apl.sotherName"
                     id="on"
                     type="text"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
@@ -1350,7 +1350,7 @@ const getUser4Apl = computed(() => {
                 <label>Date of Birth:</label>
                 <section>
                   <input
-                    v-model="curr_request!.modify_apl.sdob_day"
+                    v-model="current_request!.modify_apl.sdob_day"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     max="31"
@@ -1358,7 +1358,7 @@ const getUser4Apl = computed(() => {
                     maxlength="2"
                   />
                   <input
-                    v-model="curr_request!.modify_apl.sdob_month"
+                    v-model="current_request!.modify_apl.sdob_month"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1"
@@ -1366,7 +1366,7 @@ const getUser4Apl = computed(() => {
                     maxlength="2"
                   />
                   <input
-                    v-model="curr_request!.modify_apl.sdob_year"
+                    v-model="current_request!.modify_apl.sdob_year"
                     type="number"
                     class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
                     min="1950"
@@ -1383,7 +1383,7 @@ const getUser4Apl = computed(() => {
                 <select
                   required
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md sel font-semibold"
-                  v-model="curr_request!.modify_apl.sgender"
+                  v-model="current_request!.modify_apl.sgender"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -1397,7 +1397,7 @@ const getUser4Apl = computed(() => {
                   id="cityb"
                   type="text"
                   class="bg-white text-purple-600 h-[30px] border-none w-4/5 rounded-xl px-[15px] py-[5px] text-md text-center apply-input font-semibold"
-                  v-model="curr_request!.modify_apl.scity_ob"
+                  v-model="current_request!.modify_apl.scity_ob"
                 />
               </div>
 
@@ -1423,7 +1423,7 @@ const getUser4Apl = computed(() => {
                 <select
                   required
                   id="counb"
-                  v-model="curr_request!.modify_apl.scountry_ob"
+                  v-model="current_request!.modify_apl.scountry_ob"
                   class="bg-white text-purple-600 h-[30px] border-none w-[90%] m-[10px] rounded-xl px-[15px] py-[5px] text-md font-semibold sel"
                 >
                   <Countries />
@@ -1450,13 +1450,13 @@ const getUser4Apl = computed(() => {
               class="p-button-rounded p-button-help"
               label="Accept"
               icon="pi pi-check"
-              @click="handleApprove(curr_request)"
+              @click="handleApprove(current_request)"
             ></Button
             ><Button
               class="p-button-rounded p-button-danger"
               label="Reject"
               icon="pi pi-times"
-              @click="handleReject(curr_request)"
+              @click="handleReject(current_request)"
             ></Button>
           </div>
         </form>

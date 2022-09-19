@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, defineAsyncComponent, onMounted } from 'vue';
+import { ref, defineAsyncComponent, onMounted } from 'vue';
 import { useProfileStore } from '../store/profileStore';
-import { useDashStore } from '../store/dashboardStore';
+import { useAppStore } from '../store/Appstore';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Skeleton from 'primevue/skeleton';
 import DataView from 'primevue/dataview';
 import { storeToRefs } from 'pinia';
 import Chip from 'primevue/chip';
+import { useApplicantStore } from '../store/ApplicantStore';
 import AdminDashComp from '../components/AdminDashComp.vue';
-
-onMounted(() => {
-  useDashStore().getApls();
-  useDashStore().getDailyUserSignIns();
-  useProfileStore().getUsers();
-});
+import { supabase } from '../supabase/supabase';
+import { useRequestStore } from '../store/RequestStore';
 
 const Announcements = defineAsyncComponent(
   () => import('../components/Announcements.vue')
@@ -23,13 +20,12 @@ const Requests = defineAsyncComponent(
   () => import('../components/Requests.vue')
 );
 const Card = defineAsyncComponent(() => import('../components/Card.vue'));
-const { fullname: name } = storeToRefs(useProfileStore());
+let { content } = storeToRefs(useAppStore());
+const { active_profile } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
-const { getTotalUserAplsNumb } = storeToRefs(useDashStore());
-// const dailyAplNum = computed(() => useDashStore().getDailyUserAplsNumb);
-const totalAplNum = computed(() => useDashStore().getTotalUserAplsNumb);
-const dailyServiceSales = computed(() => useDashStore().getDailyServiceSales);
-const { dailyUserApls } = storeToRefs(useDashStore());
+const { total_applicants_number } = storeToRefs(useApplicantStore());
+const { daily_service_sales } = storeToRefs(useApplicantStore());
+const { daily_user_applicants } = storeToRefs(useApplicantStore());
 const display = ref(false);
 
 const attrs = ref([
@@ -56,13 +52,18 @@ const image = (path: string) => {
     <div
       class="chamber flex flex-col w-full rounded-3xl p-3 shadow-2xl bg-gray-50 overflow-y-scroll gap-3"
     >
-      <div class="flex w-full gap-3" v-if="role == true">
+      <div class="flex w-full gap-3" v-if="role">
         <div id="left" class="Main w-full">
           <div class="flex gap-5">
             <h3 class="font-extrabold text-2xl">Dashboard</h3>
 
             <div
-              @click="() => $router.push('/database')"
+              @click="
+                () => {
+                  content! = 'search';
+                  $router.push('/database');
+                }
+              "
               class="flex items-center justify-between py-1 px-3 w-[min(60%,130px)] bg-indigo-50 shadow-lg transition-all ease-in duration-200 hover:translate-y-[-.2em] group hover:bg-indigo-200 rounded-full self-center cursor-pointer outline outline-4 hover:outline-indigo-300 outline-indigo-100 group"
             >
               <img
@@ -81,7 +82,8 @@ const image = (path: string) => {
           >
             <div class="flex flex-col min-w-[55%] text-white">
               <span class="text-sm font-normal text-white"
-                >Welcome {{ name ? name : 'user' }}!</span
+                >Welcome
+                {{ active_profile ? active_profile.username : 'user' }}!</span
               >
               <span class="text-2xl text-indigo-100"
                 >Check your daily announcements!</span
@@ -132,7 +134,7 @@ const image = (path: string) => {
             <template #body>
               <div class="flex flex-col w-full">
                 <span class="text-xs">Total of Completed Applicants</span>
-                <span class="text-2xl">{{ totalAplNum || 0 }}</span>
+                <span class="text-2xl">{{ total_applicants_number || 0 }}</span>
               </div>
             </template>
             <template #openModalIcon>
@@ -153,7 +155,9 @@ const image = (path: string) => {
             <template #body>
               <div class="flex flex-col w-full">
                 <span class="text-xs">Total Applicants Today</span>
-                <span class="text-2xl">{{ getTotalUserAplsNumb || 0 }}</span>
+                <span class="text-2xl">{{
+                  daily_user_applicants?.length || 0
+                }}</span>
               </div>
             </template>
           </Card>
@@ -168,7 +172,7 @@ const image = (path: string) => {
             <template #body>
               <div class="flex flex-col w-full">
                 <span class="text-xs">Service Sales Today</span>
-                <span class="text-2xl">{{ dailyServiceSales || 0 }}.00</span>
+                <span class="text-2xl">{{ daily_service_sales || 0 }}.00</span>
               </div>
             </template>
             <template #openModalIcon>
@@ -185,7 +189,7 @@ const image = (path: string) => {
                 :closable="false"
                 :style="{ width: '60%' }"
                 :draggable="false"
-                :maximizable="dailyUserApls.length != 0"
+                :maximizable="daily_user_applicants?.length != 0"
                 contentClass="pt-[24px]"
               >
                 <template #header>
@@ -198,19 +202,19 @@ const image = (path: string) => {
                     <span
                       class="font-bold absolute text-sm text-center bg-red-500 px-2 py-1 rounded-full text-white flex items-center right-[-45px] top-[-15px] shadow-xl"
                       ><i class="pi pi-money-bill mr-1"></i>
-                      {{ dailyServiceSales || 0 }}.00</span
+                      {{ daily_service_sales || 0 }}.00</span
                     >
                   </div>
                 </template>
                 <div class="flex justify-center">
                   <span
                     class="text-center font-semibold"
-                    v-if="dailyUserApls.length == 0"
+                    v-if="daily_user_applicants?.length == 0"
                     >No Applied Applicants Today!</span
                   >
                   <DataView
-                    v-if="dailyUserApls.length > 0"
-                    :value="dailyUserApls"
+                    v-if="daily_user_applicants?.length! > 0"
+                    :value="daily_user_applicants"
                     layout="list"
                     class="w-full mx-4"
                     :data-key="'data'"
@@ -288,7 +292,7 @@ const image = (path: string) => {
           </Card>
         </div>
       </div>
-      <AdminDashComp v-else />
+      <AdminDashComp :dailyUserApls="daily_user_applicants!" v-else />
       <div class="w-full h-[30px]"></div>
     </div>
   </div>
