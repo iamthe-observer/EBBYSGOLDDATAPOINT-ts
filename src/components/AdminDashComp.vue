@@ -67,10 +67,12 @@ const userImage = (url: string) => {
       <h3 class="font-extrabold text-2xl">Dashboard</h3>
 
       <div
-        @click="() =>
-{                          content! = 'search';
-                  $router.push('/database');
-}"
+        @click="
+          () => {
+            useAppStore().setContent('search');
+            $router.push('/database');
+          }
+        "
         class="flex items-center justify-between py-1 px-3 w-[min(60%,130px)] bg-indigo-50 shadow-lg transition-all ease-in duration-200 hover:translate-y-[-.2em] group hover:bg-indigo-200 rounded-full self-center cursor-pointer outline outline-4 hover:outline-indigo-300 outline-indigo-100 group"
       >
         <img

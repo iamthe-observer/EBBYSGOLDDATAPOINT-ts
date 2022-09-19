@@ -11,6 +11,10 @@ export const useAppStore = defineStore('app', () => {
   const loading = ref(false);
   let content = ref(useStorage<string | null>('content', null));
 
+  function setContent(val: string) {
+    content.value = val;
+  }
+
   const daily_user_signins = computed(() => {
     return user_signins.value.filter(
       x => fullDate(new Date(x.created_at)) === fullDate(new Date())
@@ -63,6 +67,7 @@ export const useAppStore = defineStore('app', () => {
     loading,
     content,
     daily_user_signins,
+    setContent,
     getUserSignIns,
     fullDate,
   };

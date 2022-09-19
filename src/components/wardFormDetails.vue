@@ -16,7 +16,7 @@ import { storeToRefs } from 'pinia';
 import ImageView from '../components/imgView.vue';
 import Countries from './countries.vue';
 
-const { viewWardRequestImage } = storeToRefs(useRequestStore());
+const { view_ward_request_image } = storeToRefs(useRequestStore());
 const toast = useToast();
 const props = defineProps<{
   index: number;
@@ -24,10 +24,10 @@ const props = defineProps<{
   apl: Applicant | any;
   is_request: boolean;
 }>();
-const { curr_request } = storeToRefs(useRequestStore());
+const { current_request } = storeToRefs(useRequestStore());
 
 const modified_apl = computed(() => {
-  return curr_request.value!.modify_apl;
+  return current_request.value!.modify_apl;
 });
 const emit = defineEmits(['ward', 'wardStateOff']);
 const isSaved = ref(false);
@@ -152,7 +152,7 @@ async function handleAplImgUpdate(
     </div>
     <div class="w-fit mx-auto">
       <slot name="imageView">
-        <ImageView v-if="viewWardRequestImage" :url="wardImage" />
+        <ImageView v-if="view_ward_request_image" :url="wardImage" />
         <Avatar
           v-else
           class="my-3 mb-0"

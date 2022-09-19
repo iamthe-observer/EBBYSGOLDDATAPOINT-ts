@@ -10,7 +10,7 @@ import _ from 'lodash';
 import Card from '../components/Card.vue';
 import { supabase } from '../supabase/supabase';
 
-const { curr_userData } = storeToRefs(useUserStore());
+const { curr_user_data } = storeToRefs(useUserStore());
 const route = useRoute();
 const user_id: ComputedRef<any> = computed(() => route.params.id);
 const allUserApls = ref<Applicant[]>();
@@ -35,15 +35,15 @@ onBeforeMount(async () => {
 });
 
 const userImage = computed((): string => {
-  if (curr_userData.value?.profile.avatar_path) {
-    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${curr_userData.value?.profile.avatar_path}`;
+  if (curr_user_data.value?.profile.avatar_path) {
+    return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/${curr_user_data.value?.profile.avatar_path}`;
   } else {
     return `https://bwisulfnifauhpelglgh.supabase.co/storage/v1/object/public/applicants/avatar.svg`;
   }
 });
 
 const total_daily$ = computed<number>(() => {
-  let val = curr_userData.value?.apls!.map(apl => {
+  let val = curr_user_data.value?.apls!.map(apl => {
     return apl.totalPayment;
   });
   return val!.reduce(function (p, n) {
@@ -74,7 +74,7 @@ const total_daily$ = computed<number>(() => {
 
         <!-- image and quick info -->
         <div class="flex justify-between items-center">
-          <ImgView :url="curr_userData?.profile.avatar_url!" />
+          <ImgView :url="curr_user_data?.profile.avatar_url!" />
           <div class="grid col-1 min-w-full h-full">
             <Card
               class="mb-3 bg-gradient-to-bl from-indigo-100 to-indigo-300"

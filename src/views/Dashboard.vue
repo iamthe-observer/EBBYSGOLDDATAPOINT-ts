@@ -60,7 +60,7 @@ const image = (path: string) => {
             <div
               @click="
                 () => {
-                  content! = 'search';
+                  useAppStore().setContent('search');
                   $router.push('/database');
                 }
               "
