@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import SideTab from '../components/SideTab.vue';
-import { ref, markRaw } from 'vue';
+import { markRaw } from 'vue';
 import Apply from '../components/Apply.vue';
 import Search from '../components/Search.vue';
-import { useStorage } from '@vueuse/core';
 import { computed } from '@vue/reactivity';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '../store/Appstore';

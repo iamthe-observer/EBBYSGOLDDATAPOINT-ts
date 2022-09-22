@@ -2,7 +2,7 @@
 import ImgView from '../components/imgView.vue';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '../store/userStore';
-import { onBeforeMount, ref, ComputedRef, watchEffect } from 'vue';
+import { onBeforeMount, ref, ComputedRef } from 'vue';
 import { computed } from '@vue/reactivity';
 import { Applicant } from '../interfaces/interfaces';
 import { useRoute } from 'vue-router';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineAsyncComponent, onMounted } from 'vue';
+import { ref, defineAsyncComponent } from 'vue';
 import { useProfileStore } from '../store/profileStore';
 import { useAppStore } from '../store/Appstore';
 import Dialog from 'primevue/dialog';
@@ -10,8 +10,6 @@ import { storeToRefs } from 'pinia';
 import Chip from 'primevue/chip';
 import { useApplicantStore } from '../store/ApplicantStore';
 import AdminDashComp from '../components/AdminDashComp.vue';
-import { supabase } from '../supabase/supabase';
-import { useRequestStore } from '../store/RequestStore';
 
 const Announcements = defineAsyncComponent(
   () => import('../components/Announcements.vue')
@@ -20,7 +18,6 @@ const Requests = defineAsyncComponent(
   () => import('../components/Requests.vue')
 );
 const Card = defineAsyncComponent(() => import('../components/Card.vue'));
-let { content } = storeToRefs(useAppStore());
 const { active_profile } = storeToRefs(useProfileStore());
 const { role } = storeToRefs(useProfileStore());
 const { total_applicants_number } = storeToRefs(useApplicantStore());

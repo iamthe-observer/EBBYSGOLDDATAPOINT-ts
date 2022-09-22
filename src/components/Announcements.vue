@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect, onMounted, Ref } from 'vue';
+import { ref, computed, onMounted, Ref } from 'vue';
 import { useAnnStore } from '../store/AnnStore';
 import Toggle from './toggle.vue';
 import { storeToRefs } from 'pinia';
